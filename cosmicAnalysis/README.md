@@ -16,4 +16,4 @@ using all the events that pass the pedestal requirement or
 `python timeDifference.py -d [filename].root -s`
 using only the single-PE events.
 
-This document needs to be updated. Also, now we are using a different computing environment that doesn't have the mplhep module, so scripts that use mplhep will not work. See cosmicTimeDifference_lfilter.py to get the function that can be used in place of the mplhep functions.
+This document needs to be updated.
