@@ -20,10 +20,12 @@ parser.add_option('-d', dest='filename', type='string', default='cosmics_Mar_8_1
 parser.add_option('-c', dest='channel', type='string', default='3', help="SiPM channel: 3 or 4.")
 parser.add_option('-r', dest='rawPlot', action="store_true", help="Plotting raw triggers and signals")
 parser.add_option('-p', dest='PEPlot', action="store_true", help="Plotting the PE peaks")
+parser.add_option('-m', dest='minPEDiff', action="store_true", help="Plotting the difference between minimum and Pedestal")
 parser.add_option('-s', dest='smoothFit', action="store_true", help="Plotting smooth fit on the signals")
 options, args = parser.parse_args()
 filename = options.filename
 rawPlot = options.rawPlot
+minPEDiff = options.minPEDiff
 PEPlot = options.PEPlot
 smoothFit = options.smoothFit
 channel = options.channel
@@ -46,6 +48,16 @@ if channel == "3":
     sSiPMWinMax = pars[7][1]
     zPEWinMin = pars[10][0]
     zPEWinMax = pars[10][1]
+    zCoWinMin = pars[27][0]
+    zCoWinMax = pars[27][1]
+    zCoWidth = pars[28]
+    PEp0List = pars[21]
+    hw = pars[22]
+    avgGain = pars[25]
+    zDWinMin = pars[31][0]
+    zDWinMax = pars[31][1]
+    pD0 = pars[33]
+    hDw = pars[35]
 elif channel == "4":
     pedADC = pars[2]
     sPEADCMin = pars[4][0]
@@ -56,6 +68,16 @@ elif channel == "4":
     sSiPMWinMax = pars[8][1]
     zPEWinMin = pars[11][0]
     zPEWinMax = pars[11][1]
+    zCoWinMin = pars[29][0]
+    zCoWinMax = pars[29][1]
+    zCoWidth = pars[30]
+    PEp0List = pars[23]
+    hw = pars[24]
+    avgGain = pars[26]
+    zDWinMin = pars[32][0]
+    zDWinMax = pars[32][1]
+    pD0 = pars[34]
+    hDw = pars[36]
 zTWinMin = pars[9][0]
 zTWinMax = pars[9][1]
 # parameters for fitting savgol
@@ -82,6 +104,8 @@ windowDiff_trigger = []
 windowDiff_cosmic = []
 windowInt_trigger = []
 windowInt_cosmic = []
+minPedDiff_cosmic = []
+minPedDiff_trigger = []
 # for plotting raw signals and triggers
 SiPM_50 = []
 SiPM_1000 = []
@@ -156,17 +180,21 @@ for count in range(0,eRun):
         eventPedADC = ut.signalPedestal(lf,sSiPMWinMin,tpS)
         lf = np.concatenate( (lf,[eventPedADC]*offset) )
         ADCInt = ut.signalIntegral(lf,sSiPMWinMin,sSiPMWinMax,tpS)
+        minPedDiff = ut.minPedDiff(lf,sSiPMWinMin,sSiPMWinMax,tpS)
         SiPM_cosmic.append(SiPM_val_i)
         windowInt_cosmic.append(ADCInt)
+        minPedDiff_cosmic.append(minPedDiff)
     else:
         eventPedADC = ut.signalPedestal(lf,sLEDWinMin,tpS)
         lf = np.concatenate( (lf,[eventPedADC]*offset) )
         ADCInt = ut.signalIntegral(lf,sLEDWinMin,sLEDWinMax,tpS)
+        minPedDiff = ut.minPedDiff(lf,sLEDWinMin,sLEDWinMax,tpS)
         SiPM_trigger.append(SiPM_val_i)
         windowInt_trigger.append(ADCInt)
+        minPedDiff_trigger.append(minPedDiff)
     # this information is used for plotting the SiPM signals that pass requirement
     # to demonstrate how the fit for determining the time of the SiPM edge works.
-    windowInfo = ut.signalExist(lf,cosmicEdge,pedADC,sSiPMWinMin,sSiPMWinMax,tpS)
+    windowInfo = ut.signalExist(lf,cosmicEdge,avgGain,pedADC,sSiPMWinMin,sSiPMWinMax,tpS)
 
 # trigger
     trigTimeList.append( ut.pulseTime(trig_val_i,trigValue,tpS) )
@@ -210,34 +238,75 @@ elif channel == "4":
     folderName = "plots/pedADC_ch4/{}/".format(outFolder)
 ut.checkMakeDir(folderName)
 
-if PEPlot:
-    print("Number of events for LED signal area {}".format(len(windowInt_trigger)))
+if minPEDiff:
     print("Making PE peak plots using maximum and minimum ADC in signal region after smoothing signal...")
     if channel == "3":
-        folderName = "plots/maxMinDiff_ch3/{}/".format(outFolder)
+        folderName = "plots/minPedDiff_ch3/{}/".format(outFolder)
     elif channel == "4":
-        folderName = "plots/maxMinDiff_ch4/{}/".format(outFolder)
+        folderName = "plots/minPedDiff_ch4/{}/".format(outFolder)
+    ut.checkMakeDir(folderName)
+    plt.figure(figsize=(12,8))
+    data_entries,bins = np.histogram(minPedDiff_trigger, bins=1000)
+    binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
+    ut.histplot(data_entries,binscenters,"blue","LED")
+    plt.xlabel("Difference between Minimum ADC and Pedestal")
+    plt.ylabel("Number of Events")
+    plt.grid()
+    plt.legend()
+    # plt.yscale("log")
+    plt.xlabel("Difference between Minimum ADC and Pedestal")
+    plt.ylabel("Event")
+    plt.savefig(folderName + "mpDLED.png")
+    plt.xlim(zDWinMin,zDWinMax)
+    print ut.fitPEPeak(data_entries,binscenters,pD0-hDw,pD0+hDw,[100,pD0,0.01],"red")
+    plt.legend()
+    plt.xlabel("Difference between Minimum ADC and Pedestal")
+    plt.ylabel("Event")
+    plt.savefig(folderName + "mpDLED_zoom.png")
+    plt.cla()
+    plt.figure(figsize=(12,8))
+    data_entries,bins = np.histogram(minPedDiff_cosmic, bins=200)
+    binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
+    ut.histplot(data_entries,binscenters,"orange","Cosmic")
+    plt.grid()
+    plt.xlabel("Difference between Minimum ADC and Pedestal")
+    plt.ylabel("Event")
+    plt.savefig(folderName + "mpDCosmic.png")
+
+if PEPlot:
+    print("Number of events for LED signal area {}".format(len(windowInt_trigger)))
+    print("Making PE peak plots using signal area in signal region after smoothing signal...")
+    if channel == "3":
+        folderName = "plots/signalArea_ch3/{}/".format(outFolder)
+    elif channel == "4":
+        folderName = "plots/signalArea_ch4/{}/".format(outFolder)
     ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))
     data_entries,bins = np.histogram(windowInt_trigger, bins=1000)
     binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
     ut.histplot(data_entries,binscenters,"blue","LED")
-    # fitPEPeak(data_entries,binscenters,1.3,1.5,[100,1.4,1.0],"red")
-    # fitPEPeak(data_entries,binscenters,1.0,1.3,[50,1.2,1.0],"green")
     plt.xlabel("Signal integral in signal window")
     plt.ylabel("Number of Events")
-    # plt.xlim(0,1.0)
-    # plt.xticks(np.arange(0,1.0,0.1))
     plt.grid()
     plt.legend()
     # plt.yscale("log")
     plt.savefig(folderName + "int.png")
+    if PEp0List != [0,0,0]:
+        meanList = []
+        for p0 in PEp0List:
+            meanList.append(ut.fitPEPeak(data_entries,binscenters,p0-hw,p0+hw,[100,p0,0.1],"red"))
+        gainList = []
+        for i in range(len(meanList)-1):
+            gainList.append(meanList[i+1]-meanList[i])
+        axes = plt.gca()
+        plt.text(0.65,0.5,"Average gain: {:.2f}".format(np.mean(gainList)),transform = axes.transAxes)
     plt.xlim(zPEWinMin,zPEWinMax)
+    plt.legend()
     plt.savefig(folderName + "int_zoom.png")
     plt.cla()
     plt.figure(figsize=(12,8))
-    print(len(windowInt_cosmic))
-    print(windowInt_cosmic[:10])
+    if avgGain > 0:
+        windowInt_cosmic = np.array(windowInt_cosmic)/avgGain
     data_entries,bins = np.histogram(windowInt_cosmic, bins=200)
     binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
     ut.histplot(data_entries,binscenters,"orange","Cosmic")
@@ -248,8 +317,12 @@ if PEPlot:
     # plt.hist(windowInt_cosmic,bins=np.arange(0,max(windowDiff_trigger)*1.01,0.01),color='#2a77b4',label="Cosmic")
     plt.savefig(folderName + "intCosmic.png")
     plt.grid()
-    plt.xlim(0,10)
-    plt.xticks(np.arange(0,10,0.5))
+    plt.xlim(zCoWinMin,zCoWinMax)
+    plt.xticks(np.arange(zCoWinMin,zCoWinMax,zCoWidth))
+    plt.xlabel("Number of Photoelectrons")
+    plt.ylabel("Event")
+    plt.title("Cosmic Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
+    plt.yscale("log")
     # plt.hist(windowInt_cosmic,bins=np.arange(0,max(windowDiff_trigger)*1.01,0.01),color='#2a77b4',label="Cosmic")
     plt.savefig(folderName + "intCosmic_zoom.png")
 
@@ -286,17 +359,18 @@ if smoothFit:
         # plt.vlines(midPointEdge(windowInfo,lf,tpS,0.7),min(SiPM_val_i),0,color="green",label="SiPM Signal Edge 70%")
         plt.vlines(sSiPMWinMin,min(SiPM_val_i),0,label="Time Window for Locating Signal",color="black")
         plt.vlines(sSiPMWinMax,min(SiPM_val_i),0,color="black")
-        plt.hlines(base,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
-        plt.text(75,base,"0 %",color="red",fontsize=13)
-        plt.hlines(ADC_5,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
-        plt.text(75,ADC_5,"5 %",color="red",fontsize=13)
-        plt.hlines(ADC_30,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
-        plt.text(75,ADC_30,"30 %",color="red",fontsize=13)
-        plt.hlines(ADC_85,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
-        plt.text(75,ADC_85,"85 %",color="red",fontsize=13)
-        plt.hlines(minSig,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
-        plt.text(75,minSig,"100 %",color="red",fontsize=13)
+        # plt.hlines(base,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
+        # plt.text(75,base,"0 %",color="red",fontsize=13)
+        # plt.hlines(ADC_5,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
+        # plt.text(75,ADC_5,"5 %",color="red",fontsize=13)
+        # plt.hlines(ADC_30,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
+        # plt.text(75,ADC_30,"30 %",color="red",fontsize=13)
+        # plt.hlines(ADC_85,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
+        # plt.text(75,ADC_85,"85 %",color="red",fontsize=13)
+        # plt.hlines(minSig,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
+        # plt.text(75,minSig,"100 %",color="red",fontsize=13)
         ut.lineMatchEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,plot=True)
+        ut.minPedThreshEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,pD0,plot=True)
         plt.ylabel("ADC Current")
         plt.xlabel("time (ns)")
         # plt.xlim(10,490)

@@ -18,12 +18,14 @@ mpl.rc("font", family="serif", size=12)
 parser = optparse.OptionParser("usage: %prog [options]\n")
 parser.add_option('-s', dest='singlePE', action="store_true", help="Use only single PE signals")
 parser.add_option('-q', dest='quick', action="store_true", help="Run over only the first 10000 events")
+parser.add_option('-m', dest='minPedThresh', action="store_true", help="Use the minimum-pedestal difference threshold algorithm to determine signal edge")
 parser.add_option('-d', dest='filename', type='string', default='cosmics_Mar_8_1p4fiber_90cm_4by1by14_one_hole_white_extrusion_5p2meter_long.root', help="File name")
 options, args = parser.parse_args()
 
 singlePE = options.singlePE
 quick = options.quick
 filename = options.filename
+minPedThresh = options.minPedThresh
 
 outFolder = filename[:filename.find(".root")]
 # parameters
@@ -32,12 +34,12 @@ if outFolder in parameters.keys():
 else:
     pars = parameters["cosmics_Mar_8_1p4fiber_90cm_4by1by14_one_hole_white_extrusion_5p2meter_long"]
 tpS = pars[0]
-pedADC_ch3 = pars[1]
+pedPE_ch3 = pars[1]
 sPEADCMin_ch3 = pars[3][0]
 sPEADCMax_ch3 = pars[3][1]
 sSiPMWinMin_ch3 = pars[7][0]
 sSiPMWinMax_ch3 = pars[7][1]
-pedADC_ch4 = pars[2]
+pedPE_ch4 = pars[2]
 sPEADCMin_ch4 = pars[4][0]
 sPEADCMax_ch4 = pars[4][1]
 sSiPMWinMin_ch4 = pars[8][0]
@@ -58,6 +60,10 @@ fs = pars[13][0]
 cutoff = pars[13][1]
 order = pars[13][2]
 offset = pars[13][3]
+gain_ch3 = pars[25]
+gain_ch4 = pars[26]
+pD0_ch3 = pars[33]
+pD0_ch4 = pars[34]
 
 # have to redefine the pedestal, because after smoothing the pedestal value also changes
 inputFolder = "dataFiles/"
@@ -109,8 +115,8 @@ for i in range(nDiv):
 
         triggerEdge = ut.pulseTime(trigger,trigValue,tpS)
         cosmicEdge = ut.pulseTime(cosmic,trigValue,tpS)
-        info3 = ut.getSignal(SiPM_ch3,cosmicEdge,pedADC_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,cutoff,fs,order,offset)
-        info4 = ut.getSignal(SiPM_ch4,cosmicEdge,pedADC_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,cutoff,fs,order,offset)
+        info3 = ut.getSignal(SiPM_ch3,cosmicEdge,gain_ch3,pedPE_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,cutoff,fs,order,offset)
+        info4 = ut.getSignal(SiPM_ch4,cosmicEdge,gain_ch4,pedPE_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,cutoff,fs,order,offset)
         windowInfo_ch3 = info3[0]
         windowInfo_ch4 = info4[0]
         lf_ch3 = info3[1]
@@ -126,6 +132,8 @@ for i in range(nDiv):
                 # print("trigger edge: {}".format(triggerEdge))
             if sigEdge_ch3[1] < rsCut:
                 ch3_Time = sigEdge_ch3[0] - triggerEdge
+                if minPedThresh:
+                    ch3_Time = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False) - triggerEdge
                 T3.append(ch3_Time)
                 T3_all.append(ch3_Time)
         if windowInfo_ch4:
@@ -133,11 +141,15 @@ for i in range(nDiv):
             sigEdge_ch4 = ut.lineMatchEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS)
             if sigEdge_ch4[1] < rsCut:
                 ch4_Time = sigEdge_ch4[0] - triggerEdge
+                if minPedThresh:
+                    ch4_Time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False) - triggerEdge
                 T4.append(ch4_Time)
                 T4_all.append(ch4_Time)
         if windowInfo_ch3 and windowInfo_ch4:
             if sigEdge_ch3[1] < rsCut and sigEdge_ch4[1] < rsCut:
                 ch43_time = sigEdge_ch4[0] - sigEdge_ch3[0]
+                if minPedThresh:
+                    ch43_time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False) - ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False)
                 T43.append(ch43_time)
                 T43_all.append(ch43_time)
     # print("Number of data in ch3: {}".format(len(T3)))
@@ -156,8 +168,10 @@ for i in range(nDiv):
 # print(totalDataEntries_T4)
 # print("Histogram for all T43 {} events:".format(np.sum(totalDataEntries_T43)))
 # print(totalDataEntries_T43)
-
-folderName = "plots/timeDiff/{}/".format(outFolder)
+if minPedThresh:
+    folderName = "plots/timeDiff_ADCThresh/{}/".format(outFolder)
+else:
+    folderName = "plots/timeDiff_lineMatch/{}/".format(outFolder)
 if not os.path.isdir(folderName):
     os.system("mkdir {}".format(folderName))
 plotname = "T3_T4_T43"

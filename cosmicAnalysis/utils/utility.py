@@ -29,6 +29,11 @@ def signalPedestal(SiPM,sWinMin,tpS):
     else:
         return np.mean(SiPM[int((sWinMin-10)/tpS):int((sWinMin)/tpS)])
 
+def minPedDiff(SiPM,sWinMin,sWinMax,tpS):
+    minADC = np.min(SiPM[int(sWinMin/tpS):int(sWinMax/tpS)])
+    pedADC = signalPedestal(SiPM,sWinMin,tpS)
+    return pedADC - minADC
+
 def checkMakeDir(folderName):
     if not os.path.isdir(folderName):
         os.system("mkdir {}".format(folderName))
@@ -51,7 +56,7 @@ def GaussianFit(x, N, mu, sigma):
     return N * np.exp(-1.0 * (x - mu)**2 / (2 * sigma**2))
 
 # have to redefine the pedestal, because after smoothing the pedestal value also changes
-def signalExist(SiPM_val_i,cosmicTime,pedADC,sWinMin,sWinMax,tpS):
+def signalExist(SiPM_val_i,cosmicTime,gain,pedPE,sWinMin,sWinMax,tpS):
     windowValues = []
     windowIndices = []
     for i in range(len(SiPM_val_i)):
@@ -59,7 +64,9 @@ def signalExist(SiPM_val_i,cosmicTime,pedADC,sWinMin,sWinMax,tpS):
             windowValues.append(SiPM_val_i[i])
             windowIndices.append(i)
     windowInt = signalIntegral(SiPM_val_i,sWinMin,sWinMax,tpS)
-    ADCRequirement = windowInt > pedADC # more than pedestal
+    if gain <= 0:
+        gain = 1
+    ADCRequirement = windowInt/gain > pedPE # more than pedestal
     if (ADCRequirement) and (cosmicTime > 0):
         return [windowValues,windowIndices]
     else:
@@ -75,6 +82,20 @@ def butter_lowpass_filter(data, cutoff=100, fs=2000, order=6):
     b, a = butter_lowpass(cutoff, fs, order)
     y = lfilter(b, a, data)
     return y
+
+def minPedThreshEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,plot=False):
+    edgeTime = -999
+    for i in range(len(SiPM_val_i)):
+        if int(sWinMin/tpS) < i < int(sWinMax/tpS):
+            if SiPM_val_i[i] <= 0-sPEADC+signalPedestal(SiPM_val_i,sWinMin,tpS):
+                edgeTime = i*tpS
+                break
+    if plot:
+        axes = plt.gca()
+        plt.vlines(edgeTime,min(SiPM_val_i),0,color="orange")
+        plt.hlines(0-sPEADC+signalPedestal(SiPM_val_i,sWinMin,tpS),sWinMin-10,sWinMax+10,color="orange")
+        plt.text(0.65,0.5,"Signal edge (MPT) = {:.4f}".format(edgeTime),transform = axes.transAxes)
+    return edgeTime
 
 def midPointEdge(windowInfo,SiPM_val_i,tpS,percent=0.6):
     windowValues = windowInfo[0]
@@ -137,7 +158,8 @@ def fitPEPeak(data_entries,binscenters,xmin,xmax,p0List,color):
             fitData.append(data_entries[i])
     popt, pcov = curve_fit(GaussianFit, xdata=fitBins, ydata=fitData, p0=p0List,maxfev = 10000)
     xspace = np.linspace(min(fitBins),max(fitBins),1000)
-    plt.plot(xspace, GaussianFit(xspace, *popt), color=color, linewidth=3,label="mean = {:.2f}".format(popt[1]))
+    plt.plot(xspace, GaussianFit(xspace, *popt), color=color, linewidth=3,label="mean = {:.4f}".format(popt[1]))
+    return popt[1]
 
 def histplot(data,bins,color,label):
     binwidth = bins[1] - bins[0]
@@ -186,7 +208,7 @@ def plotNEvents(events,subfolder,outfolder,nEvent,sWinMin,sWinMax,tpS):
         plt.cla()
         st += nEvent
 
-def getSignal(SiPM,cosmicTime,pedADC,sWinMin,sWinMax,tpS,cutoff,fs,order,offset):
+def getSignal(SiPM,cosmicTime,gain,pedPE,sWinMin,sWinMax,tpS,cutoff,fs,order,offset):
     SiPM_val_i = []
 
     for i in range(len(SiPM)):
@@ -199,7 +221,7 @@ def getSignal(SiPM,cosmicTime,pedADC,sWinMin,sWinMax,tpS,cutoff,fs,order,offset)
     lf = butter_lowpass_filter(SiPM_val_i,cutoff,fs,order)[offset:]
     eventPedADC = signalPedestal(lf,sWinMin,tpS)
     lf = np.concatenate( (lf,[eventPedADC]*offset) )
-    windowInfo = signalExist(lf,cosmicTime,pedADC,sWinMin,sWinMax,tpS)
+    windowInfo = signalExist(lf,cosmicTime,gain,pedPE,sWinMin,sWinMax,tpS)
     return [windowInfo,lf]
 
 def histoFill(edgeTimeDiff,totalDataEntries,bins):
@@ -215,9 +237,7 @@ def ExponentialFit(x,N,l):
 def fitAndPlot(totalDataEntries,binscentersFit,color,fitPars,fitFunction,xspace):
     totalDataEntriesFit = totalDataEntries
     mode = binscentersFit[np.argmax(totalDataEntries)]
-    print("mode: {}".format(mode))
     fitPars[1] = mode
     popt, pcov = curve_fit(fitFunction, xdata=binscentersFit, ydata=totalDataEntriesFit, p0=fitPars,maxfev = 10000)
     fParas = r"N={:.1f}; $\mu$={:.2f}; $\sigma$={:.2f}".format(popt[0],popt[1],abs(popt[2]))
-    print(fParas)
     plt.plot(xspace, fitFunction(xspace, *popt), color=color, linewidth=3,label=fParas)
