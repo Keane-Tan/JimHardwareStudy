@@ -16,4 +16,12 @@ using all the events that pass the pedestal requirement or
 `python timeDifference.py -d [filename].root -s`
 using only the single-PE events.
 
-This document needs to be updated.
+## Quick summary of steps
+1. Store the files in the `dataFiles/` directory.
+2. `python cosmicSignalExploration_lfilter.py -d [filename].root -r`. Update parameters 5, 6, 7, 8.
+3. `python cosmicSignalExploration_lfilter.py -d [filename].root -p`. Update parameters 1, 2, 21, 22, 23, 24, 27, 28, 29, 30.
+4. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again after updating parameters. Update parameters 25, 26.
+5. `python cosmicSignalExploration_lfilter.py -d [filename].root -m`. Update parameters 31, 32, 33, 34, 35, 36.
+6. `python cosmicSignalExploration_lfilter.py -d [filename].root -m` again. Update parameters 33, 34.
+7. `python cosmicSignalExploration_lfilter.py -d [filename].root -s`.
+8. `python cosmicTimeDifference_lfilter.py -d [filename].root -m`. Update parameter 14 if needed.

@@ -87,16 +87,20 @@ parameters = {
 0.1,            # 24: half width for the Gaussian fit to the PE plots Channel 4
 0.26,           # 25: average gain Channel 3
 0.23,           # 26: average gain Channel 4
-[0,50],      # 27: zoom window for cosmic PE peak plots for channel 3
+[5,50],      # 27: zoom window for cosmic PE peak plots for channel 3
 5,              # 28: zoom window width for cosmic PE peak plots for channel 3
-[0,50],      # 29: zoom window for cosmic PE peak plots for channel 4
+[7,50],      # 29: zoom window for cosmic PE peak plots for channel 4
 5,              # 30: zoom window width for cosmic PE peak plots for channel 4
 [0.,0.01],      # 31: zoom window for minPedDiff plots for channel 3
 [0.,0.01],      # 32: zoom window for minPedDiff plots for channel 4
 0.0043,      # 33: single PE ADC for channel 3
 0.0048,      # 34: single PE ADC for channel 4
 0.001,    # 35: range to fit Gaussian to minPedDiff plots
-0.001    # 36: range to fit Gaussian to minPedDiff plots
+0.001,    # 36: range to fit Gaussian to minPedDiff plots
+22, # 37: mean PE for cosmic for channel 3
+8,# 38: mean PE for cosmic for channel 4
+20, # 39: half width to fit Gaussian for cosmic PE plots for channel 3
+10,# 40: half width to fit Gaussian for cosmic PE plots for channel 4
 ],
 
 "cosmics_Mar_26_1p4fiber_61cm_5by2by20_one_hole_white_extrusion_1p2meter_long_5gss":[
@@ -196,7 +200,11 @@ parameters = {
 0.0054,      # 33: single PE ADC for channel 3
 0.0051,      # 34: single PE ADC for channel 4
 0.0013,    # 35: range to fit Gaussian to minPedDiff plots
-0.0013    # 36: range to fit Gaussian to minPedDiff plots
+0.0013,    # 36: range to fit Gaussian to minPedDiff plots
+22, # 37: mean PE for cosmic for channel 3
+8,# 38: mean PE for cosmic for channel 4
+20, # 39: half width to fit Gaussian for cosmic PE plots for channel 3
+10,# 40: half width to fit Gaussian for cosmic PE plots for channel 4
 ],
 
 "cosmics_May_6_5by2by20_one_hole_white_extrusion_BCF92_1p5mm_160cm_500cm_long_newS14160_5gss":[
@@ -227,5 +235,93 @@ parameters = {
 0.1,            # 24: half width for the Gaussian fit to the PE plots Channel 4
 0,           # 25: average gain Channel 3
 0,           # 26: average gain Channel 4
+],
+
+"cosmics_May_19_5by2by20_one_hole_white_extrusion_BCF92_1p5mm_160cm_500cm_long_newS14160_2gss":[
+0.5,            # 0: time (ns) per sample
+5.0,         # 1: pedestal PE for channel 3
+6.0,         # 2: pedestal PE for channel 4
+[0.15,0.35], # 3: single PE signal area minimum, maximum for channel 3
+[0.15,0.35], # 4: single PE signal area minimum, maximum for channel 4
+[175,480],        # 5: signal window LED for channel 3
+[175,480],        # 6: signal window LED for channel 4
+[75,380],        # 7: signal window SiPM for channel 3
+[85,380],        # 8: signal window SiPM for channel 4
+[75,175],        # 9: zoom window for raw triggers
+[0.005,1.0],      # 10: zoom window for PE peak plots for channel 3
+[0.005,1.0],      # 11: zoom window for PE peak plots for channel 4
+[31,5,0.6],    # 12: savgol fit parameters [fit window size, polynomial, percent]
+[2000,100,6,14], # 13: lowpass filter parameters: [fs,cutoff,order,offset]
+[-60,40],      # 14: xmin and xmax for the time difference histogram
+[100, -50, 1],    # 15: T3 fit parameters for gaussian: normalization constant, mean, standard deviation
+[100, -45, 1],    # 16: T4 fit parameters for gaussian: normalization constant, mean, standard deviation
+[100, 5, 1],    # 17: T43 fit parameters for gaussian: normalization constant, mean, standard deviation
+-0.15,            # 18: trigger threshold
+"Gaus",          # 19: fit function: Gaus, Exp
+0.5,             # 20: bin width for the time difference histogram
+[0.25,0.5,0.7],  # 21: local maxima for PE plots Channel 3
+0.1,            # 22: half width for the Gaussian fit to the PE plots Channel 3
+[0.28,0.52,0.8],  # 23: local maxima for PE plots Channel 4
+0.1,            # 24: half width for the Gaussian fit to the PE plots Channel 4
+0.24,           # 25: average gain Channel 3
+0.26,           # 26: average gain Channel 4
+[0,50],      # 27: zoom window for cosmic PE peak plots for channel 3
+5,              # 28: zoom window width for cosmic PE peak plots for channel 3
+[0,50],      # 29: zoom window for cosmic PE peak plots for channel 4
+5,              # 30: zoom window width for cosmic PE peak plots for channel 4
+[0.,0.015],      # 31: zoom window for minPedDiff plots for channel 3
+[0.,0.015],      # 32: zoom window for minPedDiff plots for channel 4
+0.0046,      # 33: single PE ADC for channel 3
+0.0045,      # 34: single PE ADC for channel 4
+0.001,    # 35: range to fit Gaussian to minPedDiff plots
+0.001,    # 36: range to fit Gaussian to minPedDiff plots
+22, # 37: mean PE for cosmic for channel 3
+8,# 38: mean PE for cosmic for channel 4
+20, # 39: half width to fit Gaussian for cosmic PE plots for channel 3
+10,# 40: half width to fit Gaussian for cosmic PE plots for channel 4
+],
+
+"cosmics_May_20_5by2by20_one_hole_white_extrusion_BCF92_1p5mm_90cm_500cm_long_newS14160_2gss":[
+0.5,            # 0: time (ns) per sample
+8.0,         # 1: pedestal PE for channel 3
+2.5,         # 2: pedestal PE for channel 4
+[0.15,0.35], # 3: single PE signal area minimum, maximum for channel 3
+[0.15,0.35], # 4: single PE signal area minimum, maximum for channel 4
+[175,480],        # 5: signal window LED for channel 3
+[200,450],        # 6: signal window LED for channel 4
+[75,380],        # 7: signal window SiPM for channel 3
+[100,380],        # 8: signal window SiPM for channel 4
+[75,175],        # 9: zoom window for raw triggers
+[1.2,3.0],      # 10: zoom window for PE peak plots for channel 3
+[0.8,3.0],      # 11: zoom window for PE peak plots for channel 4
+[31,5,0.6],    # 12: savgol fit parameters [fit window size, polynomial, percent]
+[2000,100,6,14], # 13: lowpass filter parameters: [fs,cutoff,order,offset]
+[-60,40],      # 14: xmin and xmax for the time difference histogram
+[100, -50, 1],    # 15: T3 fit parameters for gaussian: normalization constant, mean, standard deviation
+[100, -45, 1],    # 16: T4 fit parameters for gaussian: normalization constant, mean, standard deviation
+[100, 5, 1],    # 17: T43 fit parameters for gaussian: normalization constant, mean, standard deviation
+-0.15,            # 18: trigger threshold
+"Gaus",          # 19: fit function: Gaus, Exp
+0.5,             # 20: bin width for the time difference histogram
+[1.55,1.8,2.05,2.25,2.5],  # 21: local maxima for PE plots Channel 3
+0.1,            # 22: half width for the Gaussian fit to the PE plots Channel 3
+[1.05,1.3,1.55,1.8],  # 23: local maxima for PE plots Channel 4
+0.1,            # 24: half width for the Gaussian fit to the PE plots Channel 4
+0.23,           # 25: average gain Channel 3
+0.24,           # 26: average gain Channel 4
+[0,75],      # 27: zoom window for cosmic PE peak plots for channel 3
+5,              # 28: zoom window width for cosmic PE peak plots for channel 3
+[0,26],      # 29: zoom window for cosmic PE peak plots for channel 4
+2,              # 30: zoom window width for cosmic PE peak plots for channel 4
+[0.,0.015],      # 31: zoom window for minPedDiff plots for channel 3
+[0.,0.015],      # 32: zoom window for minPedDiff plots for channel 4
+0.0045,      # 33: single PE ADC for channel 3
+0.0042,      # 34: single PE ADC for channel 4
+0.001,    # 35: range to fit Gaussian to minPedDiff plots
+0.001,    # 36: range to fit Gaussian to minPedDiff plots
+22, # 37: mean PE for cosmic for channel 3
+8,# 38: mean PE for cosmic for channel 4
+20, # 39: half width to fit Gaussian for cosmic PE plots for channel 3
+10,# 40: half width to fit Gaussian for cosmic PE plots for channel 4
 ],
 }

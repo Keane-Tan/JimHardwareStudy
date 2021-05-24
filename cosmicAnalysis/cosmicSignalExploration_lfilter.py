@@ -13,7 +13,7 @@ import optparse
 import os
 from parameters import parameters
 from utils import utility as ut
-mpl.rc("font", family="serif", size=20)
+mpl.rc("font", family="serif", size=15)
 
 parser = optparse.OptionParser("usage: %prog [options]\n")
 parser.add_option('-d', dest='filename', type='string', default='cosmics_Mar_8_1p4fiber_90cm_4by1by14_one_hole_white_extrusion_5p2meter_long.root', help="File name")
@@ -58,6 +58,8 @@ if channel == "3":
     zDWinMax = pars[31][1]
     pD0 = pars[33]
     hDw = pars[35]
+    p0Cosmic = pars[37]
+    hwCosmic = pars[39]
 elif channel == "4":
     pedADC = pars[2]
     sPEADCMin = pars[4][0]
@@ -78,6 +80,8 @@ elif channel == "4":
     zDWinMax = pars[32][1]
     pD0 = pars[34]
     hDw = pars[36]
+    p0Cosmic = pars[38]
+    hwCosmic = pars[40]
 zTWinMin = pars[9][0]
 zTWinMax = pars[9][1]
 # parameters for fitting savgol
@@ -188,6 +192,7 @@ for count in range(0,eRun):
         eventPedADC = ut.signalPedestal(lf,sLEDWinMin,tpS)
         lf = np.concatenate( (lf,[eventPedADC]*offset) )
         ADCInt = ut.signalIntegral(lf,sLEDWinMin,sLEDWinMax,tpS)
+        # ADCInt = ut.signalIntegralNoPSub(lf,sLEDWinMin,sLEDWinMax,tpS)
         minPedDiff = ut.minPedDiff(lf,sLEDWinMin,sLEDWinMax,tpS)
         SiPM_trigger.append(SiPM_val_i)
         windowInt_trigger.append(ADCInt)
@@ -214,21 +219,22 @@ for count in range(0,eRun):
 print("Number of passed events: {}".format(eventCol))
 print("SiPM_cosmic size: {}".format(len(SiPM_cosmic)))
 print("SiPM_LED size: {}".format(len(SiPM_trigger)))
+print("CH{}".format(channel))
 if rawPlot:
     if channel == "3":
         subfolder = "rawSignals_ch3"
     elif channel == "4":
         subfolder = "rawSignals_ch4"
-    ut.plotNEvents(SiPM_50,subfolder,outFolder,10,0,1000*tpS)
-    ut.plotNEvents(SiPM_1000,subfolder,outFolder,1000,0,1000*tpS)
-    ut.plotNEvents(SiPM_cosmic,subfolder,outFolder,len(SiPM_cosmic),sSiPMWinMin,sSiPMWinMax)
-    ut.plotNEvents(SiPM_trigger,subfolder,outFolder,len(SiPM_trigger),sLEDWinMin,sLEDWinMax)
-    ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWinMin,zTWinMax)
-    ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWinMin,zTWinMax)
-    ut.plotNEvents(cosmic_50,"rawCosmics",outFolder,10,zTWinMin,zTWinMax)
-    ut.plotNEvents(cosmic_1000,"rawCosmics",outFolder,1000,zTWinMin,zTWinMax)
-    ut.plotNEvents(cosmic_all,"rawCosmics",outFolder,nEvents,zTWinMin,zTWinMax)
-    ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax)
+    ut.plotNEvents(SiPM_50,subfolder,outFolder,10,0,1000*tpS,tpS)
+    ut.plotNEvents(SiPM_1000,subfolder,outFolder,1000,0,1000*tpS,tpS)
+    ut.plotNEvents(SiPM_cosmic,subfolder,outFolder,len(SiPM_cosmic),sSiPMWinMin,sSiPMWinMax,tpS,"cosmic")
+    ut.plotNEvents(SiPM_trigger,subfolder,outFolder,len(SiPM_trigger),sLEDWinMin,sLEDWinMax,tpS,"LED")
+    ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(cosmic_50,"rawCosmics",outFolder,10,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(cosmic_1000,"rawCosmics",outFolder,1000,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(cosmic_all,"rawCosmics",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
 
 # histogram difference between ADC min vs ADC max in signal region
 print("Making pedestal ADC plots...")
@@ -256,12 +262,14 @@ if minPEDiff:
     # plt.yscale("log")
     plt.xlabel("Difference between Minimum ADC and Pedestal")
     plt.ylabel("Event")
+    plt.title("LED Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "mpDLED.png")
     plt.xlim(zDWinMin,zDWinMax)
     print ut.fitPEPeak(data_entries,binscenters,pD0-hDw,pD0+hDw,[100,pD0,0.01],"red")
     plt.legend()
     plt.xlabel("Difference between Minimum ADC and Pedestal")
     plt.ylabel("Event")
+    plt.title("LED Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "mpDLED_zoom.png")
     plt.cla()
     plt.figure(figsize=(12,8))
@@ -271,6 +279,7 @@ if minPEDiff:
     plt.grid()
     plt.xlabel("Difference between Minimum ADC and Pedestal")
     plt.ylabel("Event")
+    plt.title("Cosmic Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "mpDCosmic.png")
 
 if PEPlot:
@@ -282,7 +291,7 @@ if PEPlot:
         folderName = "plots/signalArea_ch4/{}/".format(outFolder)
     ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))
-    data_entries,bins = np.histogram(windowInt_trigger, bins=1000)
+    data_entries,bins = np.histogram(windowInt_trigger, bins=500)
     binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
     ut.histplot(data_entries,binscenters,"blue","LED")
     plt.xlabel("Signal integral in signal window")
@@ -290,6 +299,7 @@ if PEPlot:
     plt.grid()
     plt.legend()
     # plt.yscale("log")
+    plt.title("LED Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "int.png")
     if PEp0List != [0,0,0]:
         meanList = []
@@ -301,7 +311,10 @@ if PEPlot:
         axes = plt.gca()
         plt.text(0.65,0.5,"Average gain: {:.2f}".format(np.mean(gainList)),transform = axes.transAxes)
     plt.xlim(zPEWinMin,zPEWinMax)
+    plt.xticks(np.arange(zPEWinMin,zPEWinMax,0.1))
+    # plt.grid()
     plt.legend()
+    plt.title("LED Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "int_zoom.png")
     plt.cla()
     plt.figure(figsize=(12,8))
@@ -315,15 +328,23 @@ if PEPlot:
     # plt.xlim(0,10)
     # plt.xticks(np.arange(0,10,0.5))
     # plt.hist(windowInt_cosmic,bins=np.arange(0,max(windowDiff_trigger)*1.01,0.01),color='#2a77b4',label="Cosmic")
+    plt.title("Cosmic Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "intCosmic.png")
-    plt.grid()
+    ut.fitPEPeak(data_entries,binscenters,zCoWinMin,zCoWinMax,[100,p0Cosmic,hwCosmic],"red")
     plt.xlim(zCoWinMin,zCoWinMax)
+    cutInd = 0
+    for i in range(len(data_entries)):
+        if binscenters[i] > zCoWinMin:
+            cutInd = i
+            break
+    plt.ylim(0,np.amax(data_entries[cutInd:])*1.1)
     plt.xticks(np.arange(zCoWinMin,zCoWinMax,zCoWidth))
     plt.xlabel("Number of Photoelectrons")
     plt.ylabel("Event")
     plt.title("Cosmic Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
-    plt.yscale("log")
+    # plt.yscale("log")
     # plt.hist(windowInt_cosmic,bins=np.arange(0,max(windowDiff_trigger)*1.01,0.01),color='#2a77b4',label="Cosmic")
+    plt.legend()
     plt.savefig(folderName + "intCosmic_zoom.png")
 
 # plot the smoothing fit

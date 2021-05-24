@@ -41,6 +41,17 @@ def checkMakeDir(folderName):
 def signalPedestalArea(SiPM,sWinMin,sWinMax,tpS):
     return abs(signalPedestal(SiPM,sWinMin,tpS))*(sWinMax-sWinMin)
 
+def signalIntegralNoPSub(SiPM_val_i,sWinMin,sWinMax,tpS):
+    windowInt = 0
+    for i in range(len(SiPM_val_i)):
+        if (sWinMin < i*tpS < sWinMax):
+            windowInt += SiPM_val_i[i]*tpS
+    area = abs(windowInt)
+    if area < 0:
+        return 0
+    else:
+        return area
+
 def signalIntegral(SiPM_val_i,sWinMin,sWinMax,tpS):
     windowInt = 0
     for i in range(len(SiPM_val_i)):
@@ -83,11 +94,11 @@ def butter_lowpass_filter(data, cutoff=100, fs=2000, order=6):
     y = lfilter(b, a, data)
     return y
 
-def minPedThreshEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,plot=False):
+def minPedThreshEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,plot=False,nPE = 1.0):
     edgeTime = -999
     for i in range(len(SiPM_val_i)):
         if int(sWinMin/tpS) < i < int(sWinMax/tpS):
-            if SiPM_val_i[i] <= 0-sPEADC+signalPedestal(SiPM_val_i,sWinMin,tpS):
+            if SiPM_val_i[i] <= 0-sPEADC*nPE+signalPedestal(SiPM_val_i,sWinMin,tpS):
                 edgeTime = i*tpS
                 break
     if plot:
@@ -120,7 +131,6 @@ def lineMatchEdge(SiPM_val_i,sWinMin,sWinMax,tpS,plot=False):
     minSig = np.min(SiPM_val_i[int(sWinMin/tpS):int(sWinMax/tpS)])
     ADC_5 = base - (abs(minSig-base)*0.05)
     ADC_85 = base - (abs(minSig-base)*0.3)
-
     data_5_85 = []
     time_5_85 = []
     for i in range(len(SiPM_val_i)):
@@ -149,16 +159,16 @@ def lineMatchEdge(SiPM_val_i,sWinMin,sWinMax,tpS,plot=False):
     else:
         return [-999,np.Inf]
 
-def fitPEPeak(data_entries,binscenters,xmin,xmax,p0List,color):
+def fitPEPeak(data_entries,binscenters,xmin,xmax,p0List,color,fitFunc=GaussianFit):
     fitBins = []
     fitData = []
     for i in range(len(binscenters)):
         if xmin < binscenters[i] < xmax:
             fitBins.append(binscenters[i])
             fitData.append(data_entries[i])
-    popt, pcov = curve_fit(GaussianFit, xdata=fitBins, ydata=fitData, p0=p0List,maxfev = 10000)
+    popt, pcov = curve_fit(fitFunc, xdata=fitBins, ydata=fitData, p0=p0List, maxfev = 10000)
     xspace = np.linspace(min(fitBins),max(fitBins),1000)
-    plt.plot(xspace, GaussianFit(xspace, *popt), color=color, linewidth=3,label="mean = {:.4f}".format(popt[1]))
+    plt.plot(xspace, fitFunc(xspace, *popt), color=color, linewidth=3,label="mean = {:.4f}".format(popt[1]))
     return popt[1]
 
 def histplot(data,bins,color,label):
@@ -168,7 +178,7 @@ def histplot(data,bins,color,label):
     plt.step(pbins,pdata,where="post",color=color)
     plt.fill_between(pbins,pdata, step="post", color=color,label=label, alpha=1)
 
-def plotNEvents(events,subfolder,outfolder,nEvent,sWinMin,sWinMax,tpS):
+def plotNEvents(events,subfolder,outfolder,nEvent,sWinMin,sWinMax,tpS,label=None):
     nDiv = int(len(events)/nEvent)
     st = 0
 
@@ -177,10 +187,10 @@ def plotNEvents(events,subfolder,outfolder,nEvent,sWinMin,sWinMax,tpS):
 
     for i in range(nDiv):
         en = st + nEvent
-        if nEvent == len(SiPM_trigger):
+        if label == "LED":
             plotName = "Events_{}-{}_trigger.png".format(st,en)
             zplotName = "Events_ZoomedIn_{}-{}_trigger.png".format(st,en)
-        elif nEvent == len(SiPM_cosmic):
+        elif label == "cosmic":
             plotName = "Events_{}-{}_cosmic.png".format(st,en)
             zplotName = "Events_ZoomedIn_{}-{}_cosmic.png".format(st,en)
         else:
@@ -241,3 +251,4 @@ def fitAndPlot(totalDataEntries,binscentersFit,color,fitPars,fitFunction,xspace)
     popt, pcov = curve_fit(fitFunction, xdata=binscentersFit, ydata=totalDataEntriesFit, p0=fitPars,maxfev = 10000)
     fParas = r"N={:.1f}; $\mu$={:.2f}; $\sigma$={:.2f}".format(popt[0],popt[1],abs(popt[2]))
     plt.plot(xspace, fitFunction(xspace, *popt), color=color, linewidth=3,label=fParas)
+    print(fParas)
