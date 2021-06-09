@@ -18,10 +18,51 @@ using only the single-PE events.
 
 ## Quick summary of steps
 1. Store the files in the `dataFiles/` directory.
-2. `python cosmicSignalExploration_lfilter.py -d [filename].root -r`. Update parameters 5, 6, 7, 8.
-3. `python cosmicSignalExploration_lfilter.py -d [filename].root -p`. Update parameters 1, 2, 21, 22, 23, 24, 27, 28, 29, 30.
-4. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again after updating parameters. Update parameters 25, 26.
-5. `python cosmicSignalExploration_lfilter.py -d [filename].root -m`. Update parameters 31, 32, 33, 34, 35, 36.
-6. `python cosmicSignalExploration_lfilter.py -d [filename].root -m` again. Update parameters 33, 34.
-7. `python cosmicSignalExploration_lfilter.py -d [filename].root -s`.
-8. `python cosmicTimeDifference_lfilter.py -d [filename].root -m`. Update parameter 14 if needed.
+2. `python cosmicSignalExploration_lfilter.py -d [filename].root -r`. Look at `rawSignals` and update parameters:
+* `sLEDWin_c3`
+* `sSiPMWin_c3`
+* `sLEDWin_c4`
+* `sSiPMWin_c4`
+
+3. `python cosmicSignalExploration_lfilter.py -d [filename].root -p`. Look at `signalArea` and update parameters:
+* `zPEWin_c3` (int.png)
+* `zCoWin_c3` (intCosmic.png)
+* `zPEWin_c4` (int.png)
+* `zCoWin_c4` (intCosmic.png)
+
+
+4. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again after updating parameters. Update parameters:
+* `PEp0List_c3` (int_zoom.png)
+* `hw_c3` (int_zoom.png)
+* `PEp0List_c4` (int_zoom.png)
+* `hw_c4` (int_zoom.png)
+
+5. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again. Update parameters:
+* `avgGain_c3` (int_zoom.png)
+* `avgGain_c4` (int_zoom.png)
+
+6. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again. Update parameters:
+* `pedADC_c3` (intCosmic_zoom.png)
+* `pedADC_c4` (intCosmic_zoom.png)
+
+7. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again.
+
+8. `python cosmicSignalExploration_lfilter.py -d [filename].root -m`. Update parameters:
+* `zDWin_c3`
+* `zDWin_c4`
+
+9. `python cosmicSignalExploration_lfilter.py -d [filename].root -m` again. Update parameters:
+* `pD0_c3`
+* `hDw_c3`
+* `pD0_c4`
+* `hDw_c4`
+
+10. `python cosmicSignalExploration_lfilter.py -d [filename].root -m` again. Update parameters:
+* `pD0_c3`
+* `pD0_c4`
+
+11. `python cosmicSignalExploration_lfilter.py -d [filename].root -s`.
+
+12. `python cosmicTimeDifference_lfilter.py -d [filename].root -m`. Update parameter `tdhistX` if needed.
+
+* I usually open two terminals and run these set of codes on one terminal, and run the same sets of codes with the `-c 4` flag on another terminal.

@@ -37,64 +37,64 @@ if outFolder in parameters.keys():
 else:
     pars = parameters["cosmics_Mar_8_1p4fiber_90cm_4by1by14_one_hole_white_extrusion_5p2meter_long"]
 
-tpS = pars[0]
+tpS = pars.tpS
 if channel == "3":
-    pedADC = pars[1]
-    sPEADCMin = pars[3][0]
-    sPEADCMax = pars[3][1]
-    sLEDWinMin = pars[5][0]
-    sLEDWinMax = pars[5][1]
-    sSiPMWinMin = pars[7][0]
-    sSiPMWinMax = pars[7][1]
-    zPEWinMin = pars[10][0]
-    zPEWinMax = pars[10][1]
-    zCoWinMin = pars[27][0]
-    zCoWinMax = pars[27][1]
-    zCoWidth = pars[28]
-    PEp0List = pars[21]
-    hw = pars[22]
-    avgGain = pars[25]
-    zDWinMin = pars[31][0]
-    zDWinMax = pars[31][1]
-    pD0 = pars[33]
-    hDw = pars[35]
-    p0Cosmic = pars[37]
-    hwCosmic = pars[39]
+    pedADC = pars.pedADC_c3
+    sPEADCMin = pars.sPEADCMin_c3[0]
+    sPEADCMax = pars.sPEADCMin_c3[1]
+    sLEDWinMin = pars.sLEDWin_c3[0]
+    sLEDWinMax = pars.sLEDWin_c3[1]
+    sSiPMWinMin = pars.sSiPMWin_c3[0]
+    sSiPMWinMax = pars.sSiPMWin_c3[1]
+    zPEWinMin = pars.zPEWin_c3[0]
+    zPEWinMax = pars.zPEWin_c3[1]
+    zCoWinMin = pars.zCoWin_c3[0]
+    zCoWinMax = pars.zCoWin_c3[1]
+    zCoWidth = pars.zCoWidth_c3
+    PEp0List = pars.PEp0List_c3
+    hw = pars.hw_c3
+    avgGain = pars.avgGain_c3
+    zDWinMin = pars.zDWin_c3[0]
+    zDWinMax = pars.zDWin_c3[1]
+    pD0 = pars.pD0_c3
+    hDw = pars.hDw_c3
+    p0Cosmic = pars.p0Cosmic_c3
+    hwCosmic = pars.hwCosmic_c3
 elif channel == "4":
-    pedADC = pars[2]
-    sPEADCMin = pars[4][0]
-    sPEADCMax = pars[4][1]
-    sLEDWinMin = pars[6][0]
-    sLEDWinMax = pars[6][1]
-    sSiPMWinMin = pars[8][0]
-    sSiPMWinMax = pars[8][1]
-    zPEWinMin = pars[11][0]
-    zPEWinMax = pars[11][1]
-    zCoWinMin = pars[29][0]
-    zCoWinMax = pars[29][1]
-    zCoWidth = pars[30]
-    PEp0List = pars[23]
-    hw = pars[24]
-    avgGain = pars[26]
-    zDWinMin = pars[32][0]
-    zDWinMax = pars[32][1]
-    pD0 = pars[34]
-    hDw = pars[36]
-    p0Cosmic = pars[38]
-    hwCosmic = pars[40]
-zTWinMin = pars[9][0]
-zTWinMax = pars[9][1]
+    pedADC = pars.pedADC_c4
+    sPEADCMin = pars.sPEADCMin_c4[0]
+    sPEADCMax = pars.sPEADCMin_c4[1]
+    sLEDWinMin = pars.sLEDWin_c4[0]
+    sLEDWinMax = pars.sLEDWin_c4[1]
+    sSiPMWinMin = pars.sSiPMWin_c4[0]
+    sSiPMWinMax = pars.sSiPMWin_c4[1]
+    zPEWinMin = pars.zPEWin_c4[0]
+    zPEWinMax = pars.zPEWin_c4[1]
+    zCoWinMin = pars.zCoWin_c4[0]
+    zCoWinMax = pars.zCoWin_c4[1]
+    zCoWidth = pars.zCoWidth_c4
+    PEp0List = pars.PEp0List_c4
+    hw = pars.hw_c4
+    avgGain = pars.avgGain_c4
+    zDWinMin = pars.zDWin_c4[0]
+    zDWinMax = pars.zDWin_c4[1]
+    pD0 = pars.pD0_c4
+    hDw = pars.hDw_c4
+    p0Cosmic = pars.p0Cosmic_c4
+    hwCosmic = pars.hwCosmic_c4
+zTWinMin = pars.zTWin[0]
+zTWinMax = pars.zTWin[1]
 # parameters for fitting savgol
-fWinSize = pars[12][0]
-fWinPoly = pars[12][1]
-sPercent = pars[12][2]
+fWinSize = pars.savgolFit[0]
+fWinPoly = pars.savgolFit[1]
+sPercent = pars.savgolFit[2]
 # lowpass filter parameters
-fs = pars[13][0]
-cutoff = pars[13][1]
-order = pars[13][2]
-offset = pars[13][3]
+fs = pars.lowpassFit[0]
+cutoff = pars.lowpassFit[1]
+order = pars.lowpassFit[2]
+offset = pars.lowpassFit[3]
 # other parameters
-trigValue = pars[18]
+trigValue = pars.trigValue
 
 
 inputFolder = "dataFiles/"
@@ -330,15 +330,25 @@ if PEPlot:
     # plt.hist(windowInt_cosmic,bins=np.arange(0,max(windowDiff_trigger)*1.01,0.01),color='#2a77b4',label="Cosmic")
     plt.title("Cosmic Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "intCosmic.png")
-    ut.fitPEPeak(data_entries,binscenters,zCoWinMin,zCoWinMax,[100,p0Cosmic,hwCosmic],"red")
+    # fit Gaussian to cosmic PE distribution
+    # ut.fitPEPeak(data_entries,binscenters,zCoWinMin,zCoWinMax,[100,p0Cosmic,hwCosmic],"red")
     plt.xlim(zCoWinMin,zCoWinMax)
     cutInd = 0
+    avgCosPE = []
+    for wInt in windowInt_cosmic:
+        if wInt > pedADC:
+            avgCosPE.append(wInt)
     for i in range(len(data_entries)):
         if binscenters[i] > zCoWinMin:
             cutInd = i
             break
+    # print(avgCosPE)
+    stdErr = np.std(avgCosPE,ddof=1)/np.sqrt(len(avgCosPE))
+    axes = plt.gca()
+    plt.text(0.6,0.65,"Avg. photoelectrons: {:.1f}({:.1f})".format(np.mean(avgCosPE),stdErr),transform = axes.transAxes)
     plt.ylim(0,np.amax(data_entries[cutInd:])*1.1)
     plt.xticks(np.arange(zCoWinMin,zCoWinMax,zCoWidth))
+    plt.vlines(pedADC,0,np.amax(data_entries[cutInd:])*1.1,label="PE Threshold",color="red")
     plt.xlabel("Number of Photoelectrons")
     plt.ylabel("Event")
     plt.title("Cosmic Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
@@ -380,16 +390,16 @@ if smoothFit:
         # plt.vlines(midPointEdge(windowInfo,lf,tpS,0.7),min(SiPM_val_i),0,color="green",label="SiPM Signal Edge 70%")
         plt.vlines(sSiPMWinMin,min(SiPM_val_i),0,label="Time Window for Locating Signal",color="black")
         plt.vlines(sSiPMWinMax,min(SiPM_val_i),0,color="black")
-        # plt.hlines(base,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
-        # plt.text(75,base,"0 %",color="red",fontsize=13)
+        plt.hlines(base,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
+        plt.text(75,base,"0 %",color="red",fontsize=13)
         # plt.hlines(ADC_5,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
         # plt.text(75,ADC_5,"5 %",color="red",fontsize=13)
         # plt.hlines(ADC_30,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
         # plt.text(75,ADC_30,"30 %",color="red",fontsize=13)
         # plt.hlines(ADC_85,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
         # plt.text(75,ADC_85,"85 %",color="red",fontsize=13)
-        # plt.hlines(minSig,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
-        # plt.text(75,minSig,"100 %",color="red",fontsize=13)
+        plt.hlines(minSig,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
+        plt.text(75,minSig,"100 %",color="red",fontsize=13)
         ut.lineMatchEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,plot=True)
         ut.minPedThreshEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,pD0,plot=True)
         plt.ylabel("ADC Current")

@@ -13,7 +13,7 @@ import os
 from parameters import parameters
 from utils import utility as ut
 
-mpl.rc("font", family="serif", size=12)
+mpl.rc("font", family="serif", size=10)
 
 parser = optparse.OptionParser("usage: %prog [options]\n")
 parser.add_option('-s', dest='singlePE', action="store_true", help="Use only single PE signals")
@@ -33,37 +33,37 @@ if outFolder in parameters.keys():
     pars = parameters[outFolder]
 else:
     pars = parameters["cosmics_Mar_8_1p4fiber_90cm_4by1by14_one_hole_white_extrusion_5p2meter_long"]
-tpS = pars[0]
-pedPE_ch3 = pars[1]
-sPEADCMin_ch3 = pars[3][0]
-sPEADCMax_ch3 = pars[3][1]
-sSiPMWinMin_ch3 = pars[7][0]
-sSiPMWinMax_ch3 = pars[7][1]
-pedPE_ch4 = pars[2]
-sPEADCMin_ch4 = pars[4][0]
-sPEADCMax_ch4 = pars[4][1]
-sSiPMWinMin_ch4 = pars[8][0]
-sSiPMWinMax_ch4 = pars[8][1]
-fWinSize = pars[12][0]
-fWinPoly = pars[12][1]
-sPercent = pars[12][2]
-tdhistXMin = pars[14][0]
-tdhistXMax = pars[14][1]
-fitPars_T3 = pars[15]
-fitPars_T4 = pars[16]
-fitPars_T43 = pars[17]
-trigValue = pars[18]
-fitFunctionChoice = pars[19]
-binWidth = pars[20]
+tpS = pars.tpS
+pedPE_ch3 = pars.pedADC_c3
+sPEADCMin_ch3 = pars.sPEADCMin_c3[0]
+sPEADCMax_ch3 = pars.sPEADCMin_c3[1]
+sSiPMWinMin_ch3 = pars.sSiPMWin_c3[0]
+sSiPMWinMax_ch3 = pars.sSiPMWin_c3[1]
+pedPE_ch4 = pars.pedADC_c4
+sPEADCMin_ch4 = pars.sPEADCMin_c4[0]
+sPEADCMax_ch4 = pars.sPEADCMin_c4[1]
+sSiPMWinMin_ch4 = pars.sSiPMWin_c4[0]
+sSiPMWinMax_ch4 = pars.sSiPMWin_c4[1]
+fWinSize = pars.savgolFit[0]
+fWinPoly = pars.savgolFit[1]
+sPercent = pars.savgolFit[2]
+tdhistXMin = pars.tdhistX[0]
+tdhistXMax = pars.tdhistX[1]
+fitPars_T3 = pars.fitPars_T3
+fitPars_T4 = pars.fitPars_T4
+fitPars_T43 = pars.fitPars_T43
+trigValue = pars.trigValue
+fitFunctionChoice = pars.fitFunctionChoice
+binWidth = pars.tdBinWidth
 # lowpass filter parameters
-fs = pars[13][0]
-cutoff = pars[13][1]
-order = pars[13][2]
-offset = pars[13][3]
-gain_ch3 = pars[25]
-gain_ch4 = pars[26]
-pD0_ch3 = pars[33]
-pD0_ch4 = pars[34]
+fs = pars.lowpassFit[0]
+cutoff = pars.lowpassFit[1]
+order = pars.lowpassFit[2]
+offset = pars.lowpassFit[3]
+gain_ch3 = pars.avgGain_c3
+gain_ch4 = pars.avgGain_c4
+pD0_ch3 = pars.pD0_c3
+pD0_ch4 = pars.pD0_c4
 
 # have to redefine the pedestal, because after smoothing the pedestal value also changes
 inputFolder = "dataFiles/"
@@ -147,9 +147,9 @@ for i in range(nDiv):
                 T4_all.append(ch4_Time)
         if windowInfo_ch3 and windowInfo_ch4:
             if sigEdge_ch3[1] < rsCut and sigEdge_ch4[1] < rsCut:
-                ch43_time = sigEdge_ch4[0] - sigEdge_ch3[0]
+                ch43_time = (sigEdge_ch4[0] - sigEdge_ch3[0])/2.
                 if minPedThresh:
-                    ch43_time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False) - ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False)
+                    ch43_time = (ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False) - ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False))/2.
                 T43.append(ch43_time)
                 T43_all.append(ch43_time)
     # print("Number of data in ch3: {}".format(len(T3)))
@@ -185,12 +185,14 @@ ut.histplot(totalDataEntries_T3,binscenters,color='#2ca02c',label="T3")
 ut.fitAndPlot(totalDataEntries_T3,binscentersFit,'#d62728',fitPars_T3,fitFunction,xspace)
 ut.histplot(totalDataEntries_T4,binscenters,color='#2a77b4',label="T4")
 ut.fitAndPlot(totalDataEntries_T4,binscentersFit,'#9467bd',fitPars_T4,fitFunction,xspace)
-ut.histplot(totalDataEntries_T43,binscenters,color='#ff7f0e',label="T4-T3")
+ut.histplot(totalDataEntries_T43,binscenters,color='#ff7f0e',label="(T4-T3)/2")
 ut.fitAndPlot(totalDataEntries_T43,binscentersFit,'#17becf',fitPars_T43,fitFunction,xspace)
 axes = plt.gca()
 plt.text(0.6,0.6,"Number of cosmic events = %i"%(np.sum(totalDataEntries_T43)),transform = axes.transAxes)
 plt.xticks(np.arange(tdhistXMin,tdhistXMax,10))
 plt.grid()
 plt.legend()
+plt.xlabel("Time (ns)")
+plt.ylabel("Events")
 plt.ylim(0)
 plt.savefig(folderName + plotname + ".png")
