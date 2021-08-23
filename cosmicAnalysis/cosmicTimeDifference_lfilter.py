@@ -133,7 +133,7 @@ for i in range(nDiv):
             if sigEdge_ch3[1] < rsCut:
                 ch3_Time = sigEdge_ch3[0] - triggerEdge
                 if minPedThresh:
-                    ch3_Time = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False) - triggerEdge
+                    ch3_Time = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0) - triggerEdge
                 T3.append(ch3_Time)
                 T3_all.append(ch3_Time)
         if windowInfo_ch4:
@@ -142,14 +142,14 @@ for i in range(nDiv):
             if sigEdge_ch4[1] < rsCut:
                 ch4_Time = sigEdge_ch4[0] - triggerEdge
                 if minPedThresh:
-                    ch4_Time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False) - triggerEdge
+                    ch4_Time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0) - triggerEdge
                 T4.append(ch4_Time)
                 T4_all.append(ch4_Time)
         if windowInfo_ch3 and windowInfo_ch4:
             if sigEdge_ch3[1] < rsCut and sigEdge_ch4[1] < rsCut:
                 ch43_time = (sigEdge_ch4[0] - sigEdge_ch3[0])/2.
                 if minPedThresh:
-                    ch43_time = (ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False) - ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False))/2.
+                    ch43_time = (ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0) - ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0))/2.
                 T43.append(ch43_time)
                 T43_all.append(ch43_time)
     # print("Number of data in ch3: {}".format(len(T3)))
@@ -191,7 +191,7 @@ axes = plt.gca()
 plt.text(0.6,0.6,"Number of cosmic events = %i"%(np.sum(totalDataEntries_T43)),transform = axes.transAxes)
 plt.xticks(np.arange(tdhistXMin,tdhistXMax,10))
 plt.grid()
-plt.legend()
+plt.legend(loc="best")
 plt.xlabel("Time (ns)")
 plt.ylabel("Events")
 plt.ylim(0)

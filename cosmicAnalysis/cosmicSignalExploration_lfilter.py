@@ -20,6 +20,7 @@ parser.add_option('-d', dest='filename', type='string', default='cosmics_Mar_8_1
 parser.add_option('-c', dest='channel', type='string', default='3', help="SiPM channel: 3 or 4.")
 parser.add_option('-r', dest='rawPlot', action="store_true", help="Plotting raw triggers and signals")
 parser.add_option('-p', dest='PEPlot', action="store_true", help="Plotting the PE peaks")
+parser.add_option('-n', dest='noGausFit', action="store_true", help="Do not fit Gaussian to the PE peaks")
 parser.add_option('-m', dest='minPEDiff', action="store_true", help="Plotting the difference between minimum and Pedestal")
 parser.add_option('-s', dest='smoothFit', action="store_true", help="Plotting smooth fit on the signals")
 options, args = parser.parse_args()
@@ -27,6 +28,7 @@ filename = options.filename
 rawPlot = options.rawPlot
 minPEDiff = options.minPEDiff
 PEPlot = options.PEPlot
+noGausFit = options.noGausFit
 smoothFit = options.smoothFit
 channel = options.channel
 
@@ -229,12 +231,12 @@ if rawPlot:
     ut.plotNEvents(SiPM_1000,subfolder,outFolder,1000,0,1000*tpS,tpS)
     ut.plotNEvents(SiPM_cosmic,subfolder,outFolder,len(SiPM_cosmic),sSiPMWinMin,sSiPMWinMax,tpS,"cosmic")
     ut.plotNEvents(SiPM_trigger,subfolder,outFolder,len(SiPM_trigger),sLEDWinMin,sLEDWinMax,tpS,"LED")
-    ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWinMin,zTWinMax,tpS)
-    ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWinMin,zTWinMax,tpS)
-    ut.plotNEvents(cosmic_50,"rawCosmics",outFolder,10,zTWinMin,zTWinMax,tpS)
-    ut.plotNEvents(cosmic_1000,"rawCosmics",outFolder,1000,zTWinMin,zTWinMax,tpS)
-    ut.plotNEvents(cosmic_all,"rawCosmics",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
-    ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
+    # ut.plotNEvents(cosmic_50,"rawCosmics",outFolder,10,zTWinMin,zTWinMax,tpS)
+    # ut.plotNEvents(cosmic_1000,"rawCosmics",outFolder,1000,zTWinMin,zTWinMax,tpS)
+    # ut.plotNEvents(cosmic_all,"rawCosmics",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
+    # ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWinMin,zTWinMax,tpS)
+    # ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWinMin,zTWinMax,tpS)
+    # ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
 
 # histogram difference between ADC min vs ADC max in signal region
 print("Making pedestal ADC plots...")
@@ -301,7 +303,7 @@ if PEPlot:
     # plt.yscale("log")
     plt.title("LED Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
     plt.savefig(folderName + "int.png")
-    if PEp0List != [0,0,0]:
+    if not noGausFit:
         meanList = []
         for p0 in PEp0List:
             meanList.append(ut.fitPEPeak(data_entries,binscenters,p0-hw,p0+hw,[100,p0,0.1],"red"))
