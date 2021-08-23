@@ -10,6 +10,7 @@ import sys
 import optparse
 import os
 from parameters import parameters
+from utils import utility as ut
 
 mpl.rc("font", family="serif", size=20)
 
@@ -54,146 +55,6 @@ else:
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
 print("Time per bin: {} ns".format(tfq))
-
-def triggerTime(trig_value_i):
-    triTime = 0
-    for j in range(len(trig_value_i)):
-        if trig_value_i[j] > trigValue:
-            triTime = j * tfq
-            break
-    return triTime
-
-def checkMakeDir(folderName):
-    if not os.path.isdir(folderName):
-        os.system("mkdir {}".format(folderName))
-
-def sigPedVoltage(SiPM,triggerTime,wmin=sWinMin,wmax=sWinMax):
-    wMin = triggerTime + wmin
-    wMax = triggerTime + wmax
-    return abs(np.mean(SiPM[int((wMin-10)/tfq):int((wMin)/tfq)]))
-
-def signalPedestal(SiPM,triggerTime,wmin=sWinMin,wmax=sWinMax):
-    wMin = triggerTime + wmin
-    wMax = triggerTime + wmax
-    return abs(np.mean(SiPM[int((wMin-10)/tfq):int((wMin)/tfq)])*(wMax-wMin))
-
-def signalIntegral(SiPM_val_i,triggerTime,wmin=sWinMin,wmax=sWinMax):
-    windowInt = 0
-    for i in range(len(SiPM_val_i)):
-        if (triggerTime + wmin < i*tfq < triggerTime + wmax):
-            windowInt += SiPM_val_i[i]*tfq
-    area = abs(windowInt) - signalPedestal(SiPM_val_i,triggerTime,wmin,wmax)
-    if area < 0:
-        return 0
-    else:
-        return area
-
-# this is based on the difference between max ADC and min ADC
-# def signalExistThreshold(SiPM_val_i,triggerTime,wmin=sWinMin,wmax=sWinMax):
-#     windowValues = []
-#     for i in range(len(SiPM_val_i)):
-#         if triggerTime + wmin < i*tfq < triggerTime + wmax:
-#             windowValues.append(SiPM_val_i[i])
-#     maxW = max(windowValues)
-#     minW = min(windowValues)
-#
-#     return maxW - minW
-
-# this is based on the area under graph for the signal
-def signalExistThreshold(SiPM_val_i,triggerTime,wmin=sWinMin,wmax=sWinMax):
-    return signalIntegral(SiPM_val_i,triggerTime,wmin,wmax)
-
-# this is based on max min ADC diff
-# def signalExist(SiPM_val_i,triggerTime,wmin=sWinMin,wmax=sWinMax,singlePE=False):
-#     windowValues = []
-#     windowIndices = []
-#     for i in range(len(SiPM_val_i)):
-#         if triggerTime + wmin < i*tfq < triggerTime + wmax: # this means there are only (27 - 18) x 5 = 45 data points within this window
-#             windowValues.append(SiPM_val_i[i])
-#             windowIndices.append(i)
-#     maxW = max(windowValues)
-#     minW = min(windowValues)
-#     maxMinDiff = maxW - minW
-#
-#     if singlePE: # the values for the difference came from looking at the distribution of the differences.
-#         ADCRequirement = maxMinDiff > sPEADCMin and maxMinDiff < sPEADCMax
-#     else:
-#         ADCRequirement = maxMinDiff > pedADC # more than pedestal
-#
-#     if (ADCRequirement) and (windowValues.index(maxW) < windowValues.index(minW)):
-#         return [windowValues,windowIndices]
-#     else:
-#         return False
-
-# this is based on signal integration
-def signalExist(SiPM_val_i,triggerTime,wmin=sWinMin,wmax=sWinMax,singlePE=False):
-    windowValues = []
-    windowIndices = []
-    for i in range(len(SiPM_val_i)):
-        if triggerTime + wmin < i*tfq < triggerTime + wmax: # this means there are only (27 - 18) x 5 = 45 data points within this window
-            windowValues.append(SiPM_val_i[i])
-            windowIndices.append(i)
-    maxW = max(windowValues)
-    minW = min(windowValues)
-
-    windowInt = signalIntegral(SiPM_val_i,triggerTime,wmin=sWinMin,wmax=sWinMax)
-
-    if singlePE: # the values for the difference came from looking at the distribution of the differences.
-        ADCRequirement = windowInt > sPEADCMin and windowInt < sPEADCMax
-    else:
-        ADCRequirement = windowInt > pedADC # more than pedestal
-
-    if (ADCRequirement) and (windowValues.index(maxW) < windowValues.index(minW)):
-        return [windowValues,windowIndices]
-    else:
-        return False
-
-
-def signalFilter(SiPM,win=fWinSize,pol=fWinPoly): # 61, 3 seem to be the optimized values
-    y = signal.savgol_filter(SiPM,
-                           win, # window size used for filtering
-                           pol), # order of fitted polynomial
-    return y[0]
-
-def midPointEdge(windowInfo,SiPM_val_i,percent=sPercent):
-    windowValues = windowInfo[0]
-    windowIndices = windowInfo[1]
-    diff = (max(windowValues) - min(windowValues))
-    mid = diff*percent + min(windowValues)
-    mEdge = 0
-    for i in windowIndices:
-        if SiPM_val_i[i] < mid:
-            mEdge = i*tfq
-            break
-    return mEdge
-
-def plotNEvents(events,subfolder,outfolder,nEvent,xlim=[0,200]):
-    nDiv = int(len(events)/nEvent)
-    st = 0
-
-    folderName = "plots/{}/{}/".format(subfolder,outfolder)
-    checkMakeDir(folderName)
-
-    for i in range(nDiv):
-        en = st + nEvent
-        plt.figure(figsize=(12,8))
-        for j in range(st,en):
-            signal = events[j]
-            plt.plot(np.arange(0,len(signal))*tfq,signal)
-        print("Saving events {}-{} to {}...".format(st,en,folderName))
-        plt.savefig(folderName + "Events_{}-{}.png".format(st,en))
-        plt.figure(figsize=(12,8))
-        for j in range(st,en):
-            signal = events[j]
-            for i in range(len(signal)):
-                if i*tfq < xlim[0] or i*tfq > xlim[1]:
-                    signal[i] = 0
-            plt.plot(np.arange(0,len(signal))*tfq,signal)
-        plt.xlim(xlim[0],xlim[1])
-        # plt.ylim(-0.05,0.01)
-        plt.savefig(folderName + "Events_ZoomedIn_{}-{}.png".format(st,en))
-        plt.cla()
-        st += nEvent
 
 inputFolder = "dataFiles/"
 tf = rt.TFile.Open(inputFolder + filename)
@@ -257,11 +118,11 @@ for count in range(0,nEvents):
         SiPM_50.append(SiPM_val_i)
         trigger_50.append(trig_val_i)
 
-    sf = signalFilter(SiPM_val_i)
-    triggerEdge = triggerTime(trig_val_i)
-    windowDiff.append(signalExistThreshold(sf,triggerEdge,sWinMin,sWinMax))
-    windowInfo = signalExist(sf,triggerEdge,sWinMin,sWinMax,True)
-    pedV = sigPedVoltage(sf,triggerEdge,wmin=sWinMin,wmax=sWinMax)
+    sf = ut.signalFilter(SiPM_val_i,win=fWinSize,pol=fWinPoly)
+    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq)
+    windowDiff.append(ut.signalExistThreshold(sf,triggerEdge,tfq,sWinMin,sWinMax))
+    windowInfo = ut.signalExist(sf,triggerEdge,tfq,pedADC,sPEADCMin,sPEADCMax,sWinMin,sWinMax,True)
+    pedV = ut.sigPedVoltage(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax)
     pedVList.append(pedV)
     if pedV > 0.0015:
         highpVList.append(sf)
@@ -273,11 +134,11 @@ for count in range(0,nEvents):
         troubles_sf_smooth.append(sf)
         troubles_window_smooth.append(windowInfo)
 # trigger
-    trigTimeList.append( triggerTime(trig_val_i) )
+    trigTimeList.append( ut.triggerTime(trig_val_i,trigValue,tfq) )
 # signal
     if windowInfo:
         accEvent += 1
-        sigEdge = midPointEdge(windowInfo,sf)
+        sigEdge = ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent)
         edgeTimeDiff.append(sigEdge - triggerEdge)
         if len(SiPM_smooth_50) < 50:
             passedIndex.append(count)
@@ -291,16 +152,16 @@ np.savez("pedVs",pedVList)
 np.savez("hpEvents",*highpVList)
 # plotting raw signals
 if rawPlot:
-    plotNEvents(SiPM_50,"rawSignals",outFolder,10,zSWin)
-    plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWin)
-    plotNEvents(SiPM_1000,"rawSignals",outFolder,1000,zSWin)
-    plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWin)
+    ut.plotNEvents(SiPM_50,"rawSignals",outFolder,10,tfq,zSWin)
+    ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,tfq,zTWin)
+    ut.plotNEvents(SiPM_1000,"rawSignals",outFolder,1000,tfq,zSWin)
+    ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,tfq,zTWin)
 
 # histogram difference between ADC min vs ADC max in signal region
 if PEPlot:
     print("Making PE peak plots using maximum and minimum ADC in signal region after smoothing signal...")
     folderName = "plots/maxMinDiff/{}/".format(outFolder)
-    checkMakeDir(folderName)
+    ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))
     plt.hist(windowDiff,bins=np.linspace(0,max(windowDiff)*1.01,200))
     plt.xlabel("Signal Area (After Pedestal Subtraction)")
@@ -318,7 +179,7 @@ if PEPlot:
 if smoothFit:
     print("Plotting smooth fit on the signals...")
     folderName = "plots/signalFit/{}/".format(outFolder)
-    checkMakeDir(folderName)
+    ut.checkMakeDir(folderName)
     for i in range(len(SiPM_smooth_50)):
         SiPM_val_i = SiPM_smooth_50[i]
         trig_val_i = trigger_smooth_50[i]
@@ -329,22 +190,22 @@ if smoothFit:
         plt.plot(np.arange(0,len(SiPM_val_i))*tfq,SiPM_val_i,label="SiPM signal")
         plt.plot(np.arange(0,len(sf))*tfq,sf,label="Smoothed SiPM Signal")
         plt.xticks(np.arange(zSWin[0],zSWin[1],5))
-        plt.vlines(midPointEdge(windowInfo,sf,0.55),min(SiPM_val_i),0,color="magenta",label="SiPM Signal Edge 55%")
-        plt.vlines(midPointEdge(windowInfo,sf),min(SiPM_val_i),0,color="red",label="SiPM Signal Edge 60%")
-        plt.vlines(midPointEdge(windowInfo,sf,0.7),min(SiPM_val_i),0,color="green",label="SiPM Signal Edge 70%")
-        plt.vlines(triggerTime(trig_val_i)+sWinMin,min(SiPM_val_i),0,label="Time Window for Signal ID")
-        plt.vlines(triggerTime(trig_val_i)+sWinMax,min(SiPM_val_i),0)
+        plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,0.55),min(SiPM_val_i),0,color="magenta",label="SiPM Signal Edge 55%")
+        plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent),min(SiPM_val_i),0,color="red",label="SiPM Signal Edge 60%")
+        plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,0.7),min(SiPM_val_i),0,color="green",label="SiPM Signal Edge 70%")
+        plt.vlines(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin,min(SiPM_val_i),0,label="Time Window for Signal ID")
+        plt.vlines(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMax,min(SiPM_val_i),0)
         plt.ylabel("ADC Current")
         plt.xlabel("time (ns)")
         print("Event {}".format(passedInd))
-        print(triggerTime(trig_val_i)+sWinMin)
-        # plt.xlim(triggerTime(trig_val_i)+sWinMin,triggerTime(trig_val_i)+sWinMax)
+        print(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin)
+        # plt.xlim(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin,ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMax)
         plt.ylim(min(SiPM_val_i)-0.001,0.001)
         axes = plt.gca()
-        plt.text(triggerTime(trig_val_i)+sWinMin-10,0,"Event {}".format(passedInd))
-        plt.text(0.2,0.1,"Signal Edge = {:.2f} ns".format(midPointEdge(windowInfo,sf)),transform = axes.transAxes)
-        plt.text(0.2,0.2,"Signal Area = {:.3f}".format(signalIntegral(sf,triggerTime(trig_val_i))),transform = axes.transAxes)
-        plt.text(0.2,0.3,"Pedestal Area = {:.3f}".format(signalPedestal(sf,triggerTime(trig_val_i))),transform = axes.transAxes)
+        plt.text(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin-10,0,"Event {}".format(passedInd))
+        plt.text(0.2,0.1,"Signal Edge = {:.2f} ns".format(ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent)),transform = axes.transAxes)
+        plt.text(0.2,0.2,"Signal Area = {:.3f}".format(ut.signalIntegral(sf,ut.triggerTime(trig_val_i,trigValue,tfq),tfq,wmin=sWinMin,wmax=sWinMax)),transform = axes.transAxes)
+        plt.text(0.2,0.3,"Pedestal Area = {:.3f}".format(ut.signalPedestal(sf,ut.triggerTime(trig_val_i,trigValue,tfq),tfq,wmin=sWinMin,wmax=sWinMax)),transform = axes.transAxes)
         plt.grid()
         plt.legend(fontsize=15)
         plt.savefig(folderName + "passedEvent{}.png".format(passedInd))
@@ -353,7 +214,7 @@ if smoothFit:
 if testP:
     print("Plotting troubleshooting plots...")
     folderName = "plots/troubleShooting/{}/".format(outFolder)
-    checkMakeDir(folderName)
+    ut.checkMakeDir(folderName)
     for i in range(len(troubles_SiPM_smooth)):
         passedInd = largetDiffEv[i]
         SiPM_val_i = troubles_SiPM_smooth[i]
@@ -364,16 +225,16 @@ if testP:
         plt.plot(np.arange(0,len(SiPM_val_i))*tfq,SiPM_val_i,label="SiPM signal")
         plt.plot(np.arange(0,len(sf))*tfq,sf,label="Smoothed SiPM Signal")
         plt.xticks(np.arange(zSWin[0],zSWin[1],5))
-        plt.vlines(midPointEdge(windowInfo,sf,0.55),min(SiPM_val_i),0,color="magenta",label="SiPM Signal Edge 55%")
-        plt.vlines(midPointEdge(windowInfo,sf),min(SiPM_val_i),0,color="red",label="SiPM Signal Edge 60%")
-        plt.vlines(midPointEdge(windowInfo,sf,0.7),min(SiPM_val_i),0,color="green",label="SiPM Signal Edge 70%")
-        plt.vlines(triggerTime(trig_val_i)+sWinMin,min(SiPM_val_i),0,label="Time Window for Signal ID")
-        plt.vlines(triggerTime(trig_val_i)+sWinMax,min(SiPM_val_i),0)
+        plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,0.55),min(SiPM_val_i),0,color="magenta",label="SiPM Signal Edge 55%")
+        plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent),min(SiPM_val_i),0,color="red",label="SiPM Signal Edge 60%")
+        plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,0.7),min(SiPM_val_i),0,color="green",label="SiPM Signal Edge 70%")
+        plt.vlines(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin,min(SiPM_val_i),0,label="Time Window for Signal ID")
+        plt.vlines(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMax,min(SiPM_val_i),0)
         plt.ylabel("ADC Current")
         plt.xlabel("time (ns)")
-        plt.xlim(triggerTime(trig_val_i)+sWinMin,triggerTime(trig_val_i)+sWinMax)
+        plt.xlim(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin,ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMax)
         plt.ylim(min(SiPM_val_i)-0.001,0.001)
-        plt.text(triggerTime(trig_val_i)+sWinMin-10,0,"Event {}".format(passedInd))
+        plt.text(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin-10,0,"Event {}".format(passedInd))
         plt.grid()
         plt.legend(fontsize=15)
         plt.savefig(folderName + "passedEvent{}.png".format(passedInd))
@@ -386,8 +247,8 @@ if testP:
             if i*tfq < zSWin[0] or i*tfq > zSWin[1]:
                 SiPM_val_i[i] = 0
         plt.plot(np.arange(0,len(SiPM_val_i))*tfq,SiPM_val_i,label="SiPM signal")
-        plt.vlines(triggerTime(trig_val_i)+sWinMin,min(SiPM_val_i),0,label="Time Window for Signal ID")
-        plt.vlines(triggerTime(trig_val_i)+sWinMax,min(SiPM_val_i),0)
+        plt.vlines(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMin,min(SiPM_val_i),0,label="Time Window for Signal ID")
+        plt.vlines(ut.triggerTime(trig_val_i,trigValue,tfq)+sWinMax,min(SiPM_val_i),0)
         plt.xticks(np.arange(zSWin[0],zSWin[1],5))
         plt.xlim(zSWin[0],zSWin[1])
     plt.savefig(folderName + "rawEvent.png")
