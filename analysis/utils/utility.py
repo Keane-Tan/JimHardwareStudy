@@ -12,10 +12,13 @@ def checkMakeDir(folderName):
     if not os.path.isdir(folderName):
         os.system("mkdir {}".format(folderName))
 
-def triggerTime(trig_value_i,trigValue,tfq):
+def triggerTime(trig_value_i,trigValue,tfq,trig="pos"):
     triTime = 0
     for j in range(len(trig_value_i)):
-        if trig_value_i[j] > trigValue:
+        if trig_value_i[j] > trigValue and trig == "pos":
+            triTime = j * tfq
+            break
+        elif trig_value_i[j] < trigValue and trig == "neg":
             triTime = j * tfq
             break
     return triTime
@@ -28,7 +31,7 @@ def sigPedVoltage(SiPM,triggerTime,tfq,wmin,wmax):
 def signalPedestal(SiPM,triggerTime,tfq,wmin,wmax):
     wMin = triggerTime + wmin
     wMax = triggerTime + wmax
-    return abs(np.mean(SiPM[int((wMin-10)/tfq):int((wMin)/tfq)])*(wMax-wMin))
+    return sigPedVoltage(SiPM,triggerTime,tfq,wmin,wmax)*(wMax-wMin)
 
 def signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax):
     windowInt = 0
@@ -42,19 +45,18 @@ def signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax):
         return area
 
 # this is based on the difference between max ADC and min ADC
-# def signalExistThreshold(SiPM_val_i,triggerTime,tfq,wmin,wmax):
-#     windowValues = []
-#     for i in range(len(SiPM_val_i)):
-#         if triggerTime + wmin < i*tfq < triggerTime + wmax:
-#             windowValues.append(SiPM_val_i[i])
-#     maxW = max(windowValues)
-#     minW = min(windowValues)
-#
-#     return maxW - minW
+def signalExistThreshold(SiPM_val_i,triggerTime,tfq,wmin,wmax):
+    windowValues = []
+    for i in range(len(SiPM_val_i)):
+        if triggerTime + wmin < i*tfq < triggerTime + wmax:
+            windowValues.append(SiPM_val_i[i])
+    minW = min(windowValues)
+    pedADC = sigPedVoltage(SiPM_val_i,triggerTime,tfq,wmin,wmax)
+    return abs(minW - pedADC)
 
 # this is based on the area under graph for the signal
-def signalExistThreshold(SiPM_val_i,triggerTime,tfq,wmin,wmax):
-    return signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax)
+# def signalExistThreshold(SiPM_val_i,triggerTime,tfq,wmin,wmax):
+#     return signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax)
 
 # this is based on max min ADC diff
 # def signalExist(SiPM_val_i,triggerTime,tfq,wmin,wmax,singlePE=False):
@@ -86,9 +88,6 @@ def signalExist(SiPM_val_i,triggerTime,tfq,pedADC,sPEADCMin,sPEADCMax,wmin,wmax,
         if triggerTime + wmin < i*tfq < triggerTime + wmax: # this means there are only (27 - 18) x 5 = 45 data points within this window
             windowValues.append(SiPM_val_i[i])
             windowIndices.append(i)
-    maxW = max(windowValues)
-    minW = min(windowValues)
-
     windowInt = signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax)
 
     if singlePE: # the values for the difference came from looking at the distribution of the differences.
@@ -96,10 +95,16 @@ def signalExist(SiPM_val_i,triggerTime,tfq,pedADC,sPEADCMin,sPEADCMax,wmin,wmax,
     else:
         ADCRequirement = windowInt > pedADC # more than pedestal
 
-    if (ADCRequirement) and (windowValues.index(maxW) < windowValues.index(minW)):
+    if ADCRequirement:
         return [windowValues,windowIndices]
     else:
         return False
+
+def SiPMSig_NoiseRed(avgNoise,SiPM_val_i,sigWinMin,sigWinMax,tfq):
+    avgNoiseMod = [0]*int(sigWinMin/tfq) + list(avgNoise)
+    avgNoiseMod = avgNoiseMod + [0]*(len(SiPM_val_i)-len(avgNoiseMod))
+    SiPM_NoiseRed = np.array(SiPM_val_i) - np.array(avgNoiseMod)
+    return SiPM_NoiseRed
 
 def signalFilter(SiPM,win,pol): # 61, 3 seem to be the optimized values
     y = signal.savgol_filter(SiPM,
@@ -113,10 +118,14 @@ def butter_lowpass(cutoff, fs, order=6):
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     return b, a
 
-def butter_lowpass_filter(data, cutoff=100, fs=2000, order=6):
+def butter_lowpass_filter(data, cutoff=300, fs=5120, order=6):
     b, a = butter_lowpass(cutoff, fs, order)
     y = lfilter(b, a, data)
     return y
+
+def filterOffset(trig_val_i,trigValue): # match the locations of the trigger edge
+    tf1 = butter_lowpass_filter(trig_val_i,300,5120,6)
+    return abs(triggerTime(trig_val_i,trigValue,1) - triggerTime(tf1,trigValue,1))
 
 def midPointEdge(windowInfo,SiPM_val_i,tfq,percent):
     windowValues = windowInfo[0]
@@ -129,6 +138,11 @@ def midPointEdge(windowInfo,SiPM_val_i,tfq,percent):
             mEdge = i*tfq
             break
     return mEdge
+
+def minEdge(windowInfo,SiPM_val_i,tfq):
+    windowIndices = windowInfo[1]
+    return (windowIndices[0]+np.argmin(SiPM_val_i[windowIndices[0]:windowIndices[-1]]))*tfq
+
 
 def GaussianFit(x, N, mu, sigma):
     return N * np.exp(-1.0 * (x - mu)**2 / (2 * sigma**2))

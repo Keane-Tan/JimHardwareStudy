@@ -49,10 +49,12 @@ trigValue = pars[11]
 trigValue = pars[11]
 fitFunctionChoice = pars[12]
 binWidth = pars[13]
-if len(pars) == 15:
+if len(pars) >= 15:
     freq = pars[14] # in Gss
 else:
     freq = 5.0
+if len(pars) >= 16:
+    trig = pars[15]
 tfq = 1./freq
 
 inputFolder = "dataFiles/"
@@ -112,14 +114,20 @@ for i in range(nDiv):
             else:
                 SiPM_val_i.append( SiPM[i] )
 
-        sf = ut.signalFilter(SiPM_val_i,win=fWinSize,pol=fWinPoly)
-        triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq)
+        # sf = ut.signalFilter(SiPM_val_i,win=fWinSize,pol=fWinPoly)
+        sf = ut.butter_lowpass_filter(SiPM_val_i,300,5120,6)
+        offset = ut.filterOffset(trig_val_i,trigValue)
+        sf = sf[offset:]
+        eventPedADC = ut.signalPedestal(sf,ut.triggerTime(trig_val_i,trigValue,tfq,trig),tfq,wmin=sWinMin,wmax=sWinMax)
+        sf = np.concatenate( (sf,[eventPedADC]*offset) )
+        triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trig)
         windowInfo = ut.signalExist(sf,triggerEdge,tfq,pedADC,sPEADCMin,sPEADCMax,sWinMin,sWinMax,singlePE)
     # trigger
-        trigTimeList.append( ut.triggerTime(trig_val_i,trigValue,tfq) )
+        trigTimeList.append( ut.triggerTime(trig_val_i,trigValue,tfq,trig) )
         pedV = ut.sigPedVoltage(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax)
     # signal
         if windowInfo:
+            # sigEdge = ut.minEdge(windowInfo,sf,tfq)
             sigEdge = ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent)
             edgeTimeDiff.append(sigEdge - triggerEdge)
             sigEdgeList.append(sigEdge)
@@ -130,7 +138,6 @@ for i in range(nDiv):
     data_entries,bins = np.histogram(edgeTimeDiff, bins=bins)
     totalDataEntries += data_entries
     start += nSubEvents
-np.savez("out.npz",sigEdge=sigEdgeList,trigEdge=trigEdgeList)
 print("Number of single PE events: {}".format(accEvent))
 print("Histogram for all {} events:".format(nEvents))
 print(totalDataEntries)

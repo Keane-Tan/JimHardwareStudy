@@ -668,8 +668,8 @@ parameters = {
 ],
 
 "July_16_260nm_s13360_1350_56V_LED_0_offset_extrusion_excites_SIPM_run1":[
-0.18,         # 0: pedestal ADC
-[0.18,0.3], # 1: single PE ADC minimum, maximum
+0.0065,         # 0: pedestal ADC
+[0.23,0.25], # 1: single PE ADC minimum, maximum
 [-20,100],        # 2: signal window minimum, maximum; original = [18,27]
 31,             # 3: fit window size, should be at least smaller than signal window size * 5
 5,              # 4: fit polynomial
@@ -677,17 +677,19 @@ parameters = {
 [-5,15],      # 6: xmin and xmax for the time difference histogram
 [70,180],        # 7: zoom window for raw signals
 [70,90],        # 8: zoom window for raw triggers
-[0,0.5],      # 9: zoom window for PE peak plots
+[0,0.015],      # 9: zoom window for PE peak plots
 [1000, 0.2],    # 10: fit parameters for gaussian: normalization constant, mean, standard deviation
 0.06,            # 11: trigger threshold
 "Exp",          # 12: fit function: Gaus, Exp
 0.2,             # 13: bin width for the time difference histogram
-5.12            # 14: sampling rate in Gss
+5.12,            # 14: sampling rate in Gss
+"pos",          # 15: polarity of trigger
+78.12,          # 16: minimum trigger time edge
 ],
 
 "July_16_260nm_s13360_1350_56V_LED_0_offset_extrusion_excites_Y11_excites_SIPM_run1":[
 0.18,         # 0: pedestal ADC
-[0.18,0.3], # 1: single PE ADC minimum, maximum
+[0.21,0.25], # 1: single PE ADC minimum, maximum
 [-20,100],        # 2: signal window minimum, maximum; original = [18,27]
 31,             # 3: fit window size, should be at least smaller than signal window size * 5
 5,              # 4: fit polynomial
@@ -710,7 +712,7 @@ parameters = {
 31,             # 3: fit window size, should be at least smaller than signal window size * 5
 5,              # 4: fit polynomial
 0.6,            # 5: this percent should gives us a point around the center of the signal edge
-[-5,15],      # 6: xmin and xmax for the time difference histogram
+[-2,5],      # 6: xmin and xmax for the time difference histogram
 [70,180],        # 7: zoom window for raw signals
 [70,90],        # 8: zoom window for raw triggers
 [0,0.5],      # 9: zoom window for PE peak plots
@@ -742,19 +744,20 @@ parameters = {
 "July_22_260nm_s13360_3050_56V_triggerSIPM_extrusion_excites_1MJ_excites_SIPM_1350_run1":[
 0.18,         # 0: pedestal ADC
 [0.18,0.3], # 1: single PE ADC minimum, maximum
-[-20,100],        # 2: signal window minimum, maximum; original = [18,27]
+[-10,65],        # 2: signal window minimum, maximum; original = [18,27]
 31,             # 3: fit window size, should be at least smaller than signal window size * 5
 5,              # 4: fit polynomial
 0.6,            # 5: this percent should gives us a point around the center of the signal edge
 [-5,15],      # 6: xmin and xmax for the time difference histogram
-[70,180],        # 7: zoom window for raw signals
-[70,90],        # 8: zoom window for raw triggers
+[105,180],        # 7: zoom window for raw signals
+[85,200],        # 8: zoom window for raw triggers
 [0,0.5],      # 9: zoom window for PE peak plots
 [1000, 0.2],    # 10: fit parameters for gaussian: normalization constant, mean, standard deviation
 0.06,            # 11: trigger threshold
 "Exp",          # 12: fit function: Gaus, Exp
 0.2,             # 13: bin width for the time difference histogram
-5.12            # 14: sampling rate in Gss
+5.12,            # 14: sampling rate in Gss
+"neg",          # 15: trigger polarity
 ],
 
 "July_22_260nm_s13360_3050_56V_triggerSIPM_extrusion_excites_2MJ_excites_SIPM_1350_run1":[
@@ -772,7 +775,8 @@ parameters = {
 0.06,            # 11: trigger threshold
 "Exp",          # 12: fit function: Gaus, Exp
 0.2,             # 13: bin width for the time difference histogram
-5.12            # 14: sampling rate in Gss
+5.12,            # 14: sampling rate in Gss
+"neg",          # 15: trigger polarity
 ],
 
 "July_22_260nm_s13360_3050_56V_triggerSIPM_extrusion_excites_BCF92_excites_SIPM_1350_run1":[
@@ -790,7 +794,8 @@ parameters = {
 0.06,            # 11: trigger threshold
 "Exp",          # 12: fit function: Gaus, Exp
 0.2,             # 13: bin width for the time difference histogram
-5.12            # 14: sampling rate in Gss
+5.12,            # 14: sampling rate in Gss
+"neg",          # 15: trigger polarity
 ],
 
 "July_22_260nm_s13360_3050_56V_triggerSIPM_extrusion_excites_Y11_excites_SIPM_1350_run1":[
@@ -808,7 +813,8 @@ parameters = {
 0.06,            # 11: trigger threshold
 "Exp",          # 12: fit function: Gaus, Exp
 0.2,             # 13: bin width for the time difference histogram
-5.12            # 14: sampling rate in Gss
+5.12,            # 14: sampling rate in Gss
+"neg",          # 15: trigger polarity
 ],
 
 "July_23_Bi207_s13360_3050_56V_triggerSIPM_extrusion_excites_1MJ_blue_fiber_excites_SIPM_1350_run1":[
@@ -830,4 +836,4 @@ parameters = {
 ],
 }
 # 2Gss is really 1.98Gss
-# 5Gss is 5.12Gss 
+# 5Gss is 5.12Gss
