@@ -26,7 +26,7 @@ def triggerTime(trig_value_i,trigValue,tfq,trig="pos"):
 def sigPedVoltage(SiPM,triggerTime,tfq,wmin,wmax):
     wMin = triggerTime + wmin
     wMax = triggerTime + wmax
-    return abs(np.mean(SiPM[int((wMin-10)/tfq):int((wMin)/tfq)]))
+    return np.mean(SiPM[int((wMin-10)/tfq):int((wMin)/tfq)])
 
 def signalPedestal(SiPM,triggerTime,tfq,wmin,wmax):
     wMin = triggerTime + wmin
@@ -38,14 +38,14 @@ def signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax):
     for i in range(len(SiPM_val_i)):
         if (triggerTime + wmin < i*tfq < triggerTime + wmax):
             windowInt += SiPM_val_i[i]*tfq
-    area = abs(windowInt) - signalPedestal(SiPM_val_i,triggerTime,tfq,wmin,wmax)
-    if area < 0:
+    area = windowInt - signalPedestal(SiPM_val_i,triggerTime,tfq,wmin,wmax)
+    if area > 0:
         return 0
     else:
-        return area
+        return abs(area)
 
 # this is based on the difference between max ADC and min ADC
-def signalExistThreshold(SiPM_val_i,triggerTime,tfq,wmin,wmax):
+def signalExistThresholdmmD(SiPM_val_i,triggerTime,tfq,wmin,wmax):
     windowValues = []
     for i in range(len(SiPM_val_i)):
         if triggerTime + wmin < i*tfq < triggerTime + wmax:
@@ -54,9 +54,18 @@ def signalExistThreshold(SiPM_val_i,triggerTime,tfq,wmin,wmax):
     pedADC = sigPedVoltage(SiPM_val_i,triggerTime,tfq,wmin,wmax)
     return abs(minW - pedADC)
 
+def signalExistThresholdMin(SiPM_val_i,triggerTime,tfq,wmin,wmax):
+    windowValues = []
+    for i in range(len(SiPM_val_i)):
+        if triggerTime + wmin < i*tfq < triggerTime + wmax:
+            windowValues.append(SiPM_val_i[i])
+    minW = min(windowValues)
+    pedADC = sigPedVoltage(SiPM_val_i,triggerTime,tfq,wmin,wmax)
+    return abs(minW)
+
 # this is based on the area under graph for the signal
-# def signalExistThreshold(SiPM_val_i,triggerTime,tfq,wmin,wmax):
-#     return signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax)
+def signalExistThresholdArea(SiPM_val_i,triggerTime,tfq,wmin,wmax):
+    return signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax)
 
 # this is based on max min ADC diff
 # def signalExist(SiPM_val_i,triggerTime,tfq,wmin,wmax,singlePE=False):
@@ -91,7 +100,7 @@ def signalExist(SiPM_val_i,triggerTime,tfq,pedADC,sPEADCMin,sPEADCMax,wmin,wmax,
     windowInt = signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax)
 
     if singlePE: # the values for the difference came from looking at the distribution of the differences.
-        ADCRequirement = windowInt > sPEADCMin and windowInt < sPEADCMax
+        ADCRequirement = sPEADCMin < windowInt < sPEADCMax
     else:
         ADCRequirement = windowInt > pedADC # more than pedestal
 
@@ -138,6 +147,15 @@ def midPointEdge(windowInfo,SiPM_val_i,tfq,percent):
             mEdge = i*tfq
             break
     return mEdge
+
+def peFracEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,nPE = 1.0):
+    edgeTime = -999
+    for i in range(len(SiPM_val_i)):
+        if int(sWinMin/tpS) < i < int(sWinMax/tpS):
+            if SiPM_val_i[i] <= 0-sPEADC*nPE+signalPedestal(SiPM_val_i,sWinMin,tpS):
+                edgeTime = i*tpS
+                break
+    return edgeTime
 
 def minEdge(windowInfo,SiPM_val_i,tfq):
     windowIndices = windowInfo[1]

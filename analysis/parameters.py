@@ -669,7 +669,7 @@ parameters = {
 
 "July_16_260nm_s13360_1350_56V_LED_0_offset_extrusion_excites_SIPM_run1":[
 0.0065,         # 0: pedestal ADC
-[0.23,0.25], # 1: single PE ADC minimum, maximum
+[0.075,0.175], # 1: single PE ADC minimum, maximum
 [-20,100],        # 2: signal window minimum, maximum; original = [18,27]
 31,             # 3: fit window size, should be at least smaller than signal window size * 5
 5,              # 4: fit polynomial
@@ -677,7 +677,7 @@ parameters = {
 [-5,15],      # 6: xmin and xmax for the time difference histogram
 [70,180],        # 7: zoom window for raw signals
 [70,90],        # 8: zoom window for raw triggers
-[0,0.015],      # 9: zoom window for PE peak plots
+[0,0.015],      # 9: zoom window for minThreshold plots
 [1000, 0.2],    # 10: fit parameters for gaussian: normalization constant, mean, standard deviation
 0.06,            # 11: trigger threshold
 "Exp",          # 12: fit function: Gaus, Exp
@@ -685,6 +685,7 @@ parameters = {
 5.12,            # 14: sampling rate in Gss
 "pos",          # 15: polarity of trigger
 78.12,          # 16: minimum trigger time edge
+[0,0.4],      # 17: zoom window for areaThreshold plots
 ],
 
 "July_16_260nm_s13360_1350_56V_LED_0_offset_extrusion_excites_Y11_excites_SIPM_run1":[
