@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import butter, lfilter, freqz
 from scipy import signal
+from scipy.optimize import curve_fit
 import os
 
 mpl.rc("font", family="serif", size=20)
@@ -32,6 +33,13 @@ def signalPedestal(SiPM,triggerTime,tfq,wmin,wmax):
     wMin = triggerTime + wmin
     wMax = triggerTime + wmax
     return sigPedVoltage(SiPM,triggerTime,tfq,wmin,wmax)*(wMax-wMin)
+
+def minPedDiff(SiPM,triggerTime,tfq,wmin,wmax):
+    wMin = triggerTime + wmin
+    wMax = triggerTime + wmax
+    minADC = np.min(SiPM[int(wMin/tfq):int(wMax/tfq)])
+    pedADC = sigPedVoltage(SiPM,triggerTime,tfq,wmin,wmax)
+    return pedADC - minADC
 
 def signalIntegral(SiPM_val_i,triggerTime,tfq,wmin,wmax):
     windowInt = 0
@@ -148,12 +156,14 @@ def midPointEdge(windowInfo,SiPM_val_i,tfq,percent):
             break
     return mEdge
 
-def peFracEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,nPE = 1.0):
+def peFracEdge(SiPM_val_i,triggerTime,wmin,wmax,tfq,sPEADC,nPE = 1.0):
     edgeTime = -999
+    sWinMin = triggerTime + wmin
+    sWinMax = triggerTime + wmax
     for i in range(len(SiPM_val_i)):
-        if int(sWinMin/tpS) < i < int(sWinMax/tpS):
-            if SiPM_val_i[i] <= 0-sPEADC*nPE+signalPedestal(SiPM_val_i,sWinMin,tpS):
-                edgeTime = i*tpS
+        if int(sWinMin/tfq) < i < int(sWinMax/tfq):
+            if SiPM_val_i[i] <= 0-sPEADC*nPE+sigPedVoltage(SiPM_val_i,triggerTime,tfq,wmin,wmax):
+                edgeTime = i*tfq
                 break
     return edgeTime
 
@@ -195,6 +205,18 @@ def plotNEvents(events,subfolder,outfolder,nEvent,tfq,xlim=[0,200]):
         plt.savefig(folderName + "Events_ZoomedIn_{}-{}.png".format(st,en))
         plt.cla()
         st += nEvent
+
+def fitPEPeak(data_entries,binscenters,xmin,xmax,p0List,color,fitFunc=GaussianFit):
+    fitBins = []
+    fitData = []
+    for i in range(len(binscenters)):
+        if xmin < binscenters[i] < xmax:
+            fitBins.append(binscenters[i])
+            fitData.append(data_entries[i])
+    popt, pcov = curve_fit(fitFunc, xdata=fitBins, ydata=fitData, p0=p0List, maxfev = 10000)
+    xspace = np.linspace(min(fitBins),max(fitBins),1000)
+    plt.plot(xspace, fitFunc(xspace, *popt), color=color, linewidth=3,label="mean = {:.4f}".format(popt[1]))
+    return popt[1]
 
 def histplot(data,bins,color,label):
     binwidth = bins[1] - bins[0]

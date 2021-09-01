@@ -686,6 +686,8 @@ parameters = {
 "pos",          # 15: polarity of trigger
 78.12,          # 16: minimum trigger time edge
 [0,0.4],      # 17: zoom window for areaThreshold plots
+[0.0068,0.002],      # 18: Estimated single PE peak ADC, and the distribution width for minPedDiff
+[0,0.02,0.002] # 19: zoom window for minPedDiff
 ],
 
 "July_16_260nm_s13360_1350_56V_LED_0_offset_extrusion_excites_Y11_excites_SIPM_run1":[
