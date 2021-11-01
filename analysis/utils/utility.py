@@ -15,7 +15,7 @@ def checkMakeDir(folderName):
 
 def triggerTime(trig_value_i,trigValue,tfq,trig="pos"):
     triTime = 0
-    for j in range(len(trig_value_i)):
+    for j in range(10,len(trig_value_i)-10):
         if trig_value_i[j] > trigValue and trig == "pos":
             triTime = j * tfq
             break
@@ -23,6 +23,11 @@ def triggerTime(trig_value_i,trigValue,tfq,trig="pos"):
             triTime = j * tfq
             break
     return triTime
+
+# return the index of the element in the list whose value is closest to val.
+def indBasedVal(val,alist):
+    clist = np.abs(np.array(alist) - val)
+    return np.argmin(clist)
 
 def sigPedVoltage(SiPM,triggerTime,tfq,wmin,wmax):
     wMin = triggerTime + wmin
@@ -68,7 +73,6 @@ def signalExistThresholdMin(SiPM_val_i,triggerTime,tfq,wmin,wmax):
         if triggerTime + wmin < i*tfq < triggerTime + wmax:
             windowValues.append(SiPM_val_i[i])
     minW = min(windowValues)
-    pedADC = sigPedVoltage(SiPM_val_i,triggerTime,tfq,wmin,wmax)
     return abs(minW)
 
 # this is based on the area under graph for the signal
@@ -119,8 +123,12 @@ def signalExist(SiPM_val_i,triggerTime,tfq,pedADC,sPEADCMin,sPEADCMax,wmin,wmax,
 
 def SiPMSig_NoiseRed(avgNoise,SiPM_val_i,sigWinMin,sigWinMax,tfq):
     avgNoiseMod = [0]*int(sigWinMin/tfq) + list(avgNoise)
+    diff = len(SiPM_val_i)-len(avgNoiseMod)
     avgNoiseMod = avgNoiseMod + [0]*(len(SiPM_val_i)-len(avgNoiseMod))
-    SiPM_NoiseRed = np.array(SiPM_val_i) - np.array(avgNoiseMod)
+    if len(SiPM_val_i) != len(avgNoiseMod):
+        SiPM_NoiseRed = np.array(SiPM_val_i)
+    else:
+        SiPM_NoiseRed = np.array(SiPM_val_i) - np.array(avgNoiseMod)
     return SiPM_NoiseRed
 
 def signalFilter(SiPM,win,pol): # 61, 3 seem to be the optimized values
@@ -140,9 +148,9 @@ def butter_lowpass_filter(data, cutoff=300, fs=5120, order=6):
     y = lfilter(b, a, data)
     return y
 
-def filterOffset(trig_val_i,trigValue): # match the locations of the trigger edge
+def filterOffset(trig_val_i,trigValue,trig): # match the locations of the trigger edge
     tf1 = butter_lowpass_filter(trig_val_i,300,5120,6)
-    return abs(triggerTime(trig_val_i,trigValue,1) - triggerTime(tf1,trigValue,1))
+    return abs(triggerTime(trig_val_i,trigValue,1,trig) - triggerTime(tf1,trigValue,1,trig))
 
 def midPointEdge(windowInfo,SiPM_val_i,tfq,percent):
     windowValues = windowInfo[0]

@@ -23,26 +23,22 @@ aveNoise = options.aveNoise
 
 outFolder = filename[:filename.find(".root")]
 # parameters
-if outFolder in parameters.keys():
-    pars = parameters[outFolder]
-else:
-    pars = parameters["Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss"]
-pedADC = pars[0]
-sWinMin = pars[2][0]
-sWinMax = pars[2][1]
-zSWin = pars[7]
-zTWin = pars[8]
-zPEWinMin = pars[9][0]
-zPEWinMax = pars[9][1]
-trigValue = pars[11]
-freq = pars[14] # in Gss
-trig = pars[15]
+pars = parameters[outFolder]
+pedADC = pars.pedADC
+sWinMin,sWinMax = pars.sWin
+zSWin = pars.zSWin
+zTWin = pars.zTWin
+zPEWinMin,zPEWinMax = pars.zPEWin
+trigValue = pars.trigValue
+freq = pars.freq # in Gss
+trigPol = pars.trigPol
+zPEScan = pars.zPEScan
 
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
 print("Time per bin: {} ns".format(tfq))
 
-inputFolder = "dataFiles/"
+inputFolder = "root://cmseos.fnal.gov//store/user/keanet/Hardware/analysis/dataFiles/"
 tf = rt.TFile.Open(inputFolder + filename)
 tr = tf.Get("T")
 nEvents = tr.GetEntries()
@@ -67,8 +63,8 @@ for count in range(0,nEvents):
 
     if count % 10000 == 0:
         print(count)
-
-    # if count == 1000:
+    #
+    # if count == 5000:
     #     break
 
     trig_val_i = []
@@ -80,7 +76,7 @@ for count in range(0,nEvents):
             SiPM_val_i.append(0)
         else:
             SiPM_val_i.append( SiPM[i] )
-    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trig)
+    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trigPol)
     sigWinMin = triggerEdge+sWinMin
     sigWinMax = triggerEdge+sWinMax
     if rawPlot:
@@ -93,7 +89,7 @@ for count in range(0,nEvents):
     if PEPlot:
         windowDiff.append(ut.signalExistThresholdMin(SiPM_val_i,triggerEdge,tfq,sWinMin,sWinMax))
     if trigTimeD:
-        trigTimeList.append( ut.triggerTime(trig_val_i,trigValue,tfq,trig) )
+        trigTimeList.append( ut.triggerTime(trig_val_i,trigValue,tfq,trigPol) )
     if aveNoise:
         if ut.signalExistThresholdMin(SiPM_val_i,triggerEdge,tfq,sWinMin,sWinMax) < pedADC:
             noiseList.append(SiPM_val_i)
@@ -112,7 +108,10 @@ if PEPlot:
     folderName = "plots/minThreshold/{}/".format(outFolder)
     ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))
-    plt.hist(windowDiff,bins=np.linspace(0,max(windowDiff)*1.01,200))
+    if zPEScan == "auto":
+        plt.hist(windowDiff,bins=np.linspace(0,max(windowDiff)*1.01,200))
+    else:
+        plt.hist(windowDiff,bins=np.linspace(zPEScan[0],zPEScan[1],200))
     plt.xlabel("Signal Area (After Pedestal Subtraction)")
     plt.ylabel("Number of Events")
     plt.grid()
@@ -147,10 +146,16 @@ if aveNoise:
         nMin = int(nWin[0]/tfq)
         nMax = int(nWin[1]/tfq)
         noise = noiseList[i][nMin:nMax]
+        noise = np.array(noise,dtype=np.float32)
+        if len(noise) == 0:
+            continue
         noiseInWindow.append(noise)
         plt.plot(np.arange(0,len(noise))*tfq,noise)
-    noiseInWindow = np.array(noiseInWindow)
-    avgNoise = np.mean(noiseInWindow,axis=0)
+    if len(noiseInWindow) > 0:
+        noiseInWindow = np.array(noiseInWindow)
+        avgNoise = np.nanmean(noiseInWindow,axis=0)
+    else:
+        avgNoise = np.zeros(int(sWinMax-sWinMin))
     plt.plot(np.arange(0,len(avgNoise))*tfq,avgNoise,linewidth=3,color="silver",label="Average noise")
     plt.xlabel("Adjusted Time (ns)")
     plt.ylabel("ADC")

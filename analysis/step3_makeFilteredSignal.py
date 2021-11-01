@@ -15,21 +15,17 @@ filename = options.filename
 
 outFolder = filename[:filename.find(".root")]
 # parameters
-if outFolder in parameters.keys():
-    pars = parameters[outFolder]
-else:
-    pars = parameters["Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss"]
-sWinMin = pars[2][0]
-sWinMax = pars[2][1]
-trigValue = pars[11]
-freq = pars[14] # in Gss
-trig = pars[15]
+pars = parameters[outFolder]
+sWinMin,sWinMax = pars.sWin
+trigValue = pars.trigValue
+freq = pars.freq # in Gss
+trigPol = pars.trigPol
 
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
 print("Time per bin: {} ns".format(tfq))
 
-inputFolder = "dataFiles/"
+inputFolder = "root://cmseos.fnal.gov//store/user/keanet/Hardware/analysis/dataFiles/"
 tf = rt.TFile.Open(inputFolder + filename)
 tr = tf.Get("T")
 nEvents = tr.GetEntries()
@@ -41,12 +37,19 @@ eventList = sorted(sigRedNoise.files,key=int)
 filSigs = {}
 plotfolderName = "plots/filtSig/{}/".format(outFolder)
 ut.checkMakeDir(plotfolderName)
+evC = 0
 
 for count in eventList:
     count = int(count)
     tr.GetEntry(count)
     trigger = tr.c1
     SiPM = tr.c2
+
+    if evC % 1000 == 0:
+        print(evC)
+    evC += 1
+    # if evC == 1000:
+    #     break
 
     trig_val_i = []
     SiPM_val_raw = []
@@ -59,12 +62,12 @@ for count in eventList:
         else:
             SiPM_val_raw.append( SiPM[i] )
 
-    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trig)
+    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trigPol)
     sigWinMin = triggerEdge+sWinMin
     sigWinMax = triggerEdge+sWinMax
     SiPM_val_i = sigRedNoise[str(count)]
     sf = ut.butter_lowpass_filter(SiPM_val_i,300,5120,6)
-    offset = ut.filterOffset(trig_val_i,trigValue)
+    offset = ut.filterOffset(trig_val_i,trigValue,trigPol)
     sf = sf[offset:]
     eventPedADC = ut.signalPedestal(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax)
     sf = np.concatenate( (sf,[eventPedADC]*offset) )
@@ -80,4 +83,6 @@ for count in eventList:
         plt.ylabel("ADC")
         plt.savefig(plotfolderName + "filteredSignal_{}.png".format(count))
 
-np.savez("processedData/{}/filtSig".format(outFolder),**filSigs)
+fullOutFolder = "/eos/uscms/store/user/keanet/Hardware/analysis/processedData/{}".format(outFolder)
+ut.checkMakeDir(fullOutFolder)
+np.savez("{}/filtSig".format(fullOutFolder),**filSigs)

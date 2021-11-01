@@ -14,22 +14,18 @@ options, args = parser.parse_args()
 filename = options.filename
 outFolder = filename[:filename.find(".root")]
 # parameters
-if outFolder in parameters.keys():
-    pars = parameters[outFolder]
-else:
-    pars = parameters["Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss"]
-pedADC = pars[0]
-sWinMin = pars[2][0]
-sWinMax = pars[2][1]
-trigValue = pars[11]
-freq = pars[14] # in Gss
-trig = pars[15]
+pars = parameters[outFolder]
+pedADC = pars.pedADC
+sWinMin,sWinMax = pars.sWin
+trigValue = pars.trigValue
+freq = pars.freq # in Gss
+trigPol = pars.trigPol
 
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
 print("Time per bin: {} ns".format(tfq))
 
-inputFolder = "dataFiles/"
+inputFolder = "root://cmseos.fnal.gov//store/user/keanet/Hardware/analysis/dataFiles/"
 tf = rt.TFile.Open(inputFolder + filename)
 tr = tf.Get("T")
 nEvents = tr.GetEntries()
@@ -62,7 +58,7 @@ for count in range(0,nEvents):
         else:
             SiPM_val_i.append( SiPM[i] )
 
-    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trig)
+    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trigPol)
     sigWinMin = triggerEdge+sWinMin
     sigWinMax = triggerEdge+sWinMax
     if ut.signalExistThresholdMin(SiPM_val_i,triggerEdge,tfq,sWinMin,sWinMax) > pedADC:

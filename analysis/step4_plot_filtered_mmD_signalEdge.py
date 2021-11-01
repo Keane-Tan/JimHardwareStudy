@@ -5,6 +5,7 @@ import numpy as np
 import optparse
 from parameters import parameters
 from utils import utility as ut
+import os
 
 mpl.rc("font", family="serif", size=15)
 
@@ -23,33 +24,25 @@ timeDiff = options.timeDiff
 
 outFolder = filename[:filename.find(".root")]
 # parameters
-if outFolder in parameters.keys():
-    pars = parameters[outFolder]
-else:
-    pars = parameters["Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss"]
-pedADC = pars[0]
-sPEADCMin = pars[1][0]
-sPEADCMax = pars[1][1]
-sWinMin = pars[2][0]
-sWinMax = pars[2][1]
-sPercent = pars[5]
-zSWin = pars[7]
-trigValue = pars[11]
-freq = pars[14] # in Gss
-trig = pars[15]
-zPEWinMin = pars[17][0]
-zPEWinMax = pars[17][1]
-pD0 = pars[18][0]
-hDw = pars[18][1]
-zDWinMin = pars[19][0]
-zDWinMax = pars[19][1]
-zDWinWidth = pars[19][2]
+pars = parameters[outFolder]
+pedADC = pars.pedADC
+sPEADCMin,sPEADCMax = pars.sPEADC
+sWinMin,sWinMax = pars.sWin
+sPercent = pars.sPercent
+zSWin = pars.zSWin
+trigValue = pars.trigValue
+freq = pars.freq # in Gss
+trigPol = pars.trigPol
+aPEWinMin,aPEWinMax,aPEWidth = pars.aPEWin
+pD0,hDw = pars.eSPE
+zDWinMin,zDWinMax,zDWinWidth = pars.zDWin
+aPEScan = pars.aPEScan
 
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
 print("Time per bin: {} ns".format(tfq))
 
-inputFolder = "dataFiles/"
+inputFolder = "root://cmseos.fnal.gov//store/user/keanet/Hardware/analysis/dataFiles/"
 tf = rt.TFile.Open(inputFolder + filename)
 tr = tf.Get("T")
 nEvents = tr.GetEntries()
@@ -59,8 +52,11 @@ minPedDiff = []
 windowDiff = []
 # for plotting all filtered signals that pass the threshold
 passedFilt = []
-# loading noise-reduced signals
-filSigs = np.load("processedData/{}/filtSig.npz".format(outFolder))
+# delete noise reduced signals
+if os.path.isfile("processedData/{}/sigRedNoise.npz".format(outFolder)):
+    os.system("rm processedData/{}/sigRedNoise.npz".format(outFolder))
+# loading filtered signals
+filSigs = np.load("/eos/uscms/store/user/keanet/Hardware/analysis/processedData/{}/filtSig.npz".format(outFolder))
 eventList = sorted(filSigs.files,key=int)
 
 sfolderName = "plots/signalFit/{}/".format(outFolder)
@@ -95,7 +91,7 @@ for count in eventList:
         else:
             SiPM_val_raw.append( SiPM[i] )
 
-    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trig)
+    triggerEdge = ut.triggerTime(trig_val_i,trigValue,tfq,trigPol)
     sigWinMin = triggerEdge+sWinMin
     sigWinMax = triggerEdge+sWinMax
     if minPEDiff:
@@ -126,7 +122,8 @@ for count in eventList:
                 plt.ylabel("ADC Current")
                 plt.xlabel("time (ns)")
                 plt.xticks(np.arange(zSWin[0],zSWin[1],10))
-                plt.ylim(min(SiPM_val_raw[int(sigWinMin/tfq):int(sigWinMax/tfq)])-0.001,0.001)
+                if len(SiPM_val_raw[int(sigWinMin/tfq):int(sigWinMax/tfq)]) > 0:
+                    plt.ylim(min(SiPM_val_raw[int(sigWinMin/tfq):int(sigWinMax/tfq)])-0.001,0.001)
                 axes = plt.gca()
                 plt.text(sigWinMin-10,0,"Event {}".format(count))
                 plt.text(0.2,0.1,"Signal Edge = {:.2f} ns".format(ut.minEdge(windowInfo,sf,tfq)),transform = axes.transAxes)
@@ -139,7 +136,7 @@ for count in eventList:
             sefCount += 1
 
 if timeDiff:
-    folderName = "processedData/{}".format(outFolder)
+    folderName = "/eos/uscms/store/user/keanet/Hardware/analysis/processedData/{}".format(outFolder)
     ut.checkMakeDir(folderName)
     np.savez("{}/timeDifference".format(folderName),midPointSigEdge=midPointSigEdge,minSigEdge=minSigEdge,minPedEdge_0p5=minPedEdge_0p5,minPedEdge_0p75=minPedEdge_0p75,minPedEdge=minPedEdge)
 
@@ -167,15 +164,20 @@ if PEPlot:
     print("Making PE peak plots using maximum and minimum ADC in signal region after smoothing signal...")
     folderName = "plots/areaThreshold/{}/".format(outFolder)
     ut.checkMakeDir(folderName)
+    windowDiff = np.array(windowDiff)
+    windowDiff = windowDiff[np.logical_not(np.isnan(windowDiff))]
     plt.figure(figsize=(12,8))
-    plt.hist(windowDiff,bins=np.linspace(0,max(windowDiff)*1.01,200))
+    if aPEScan == "auto":
+        plt.hist(windowDiff,bins=np.linspace(0,np.nanmax(windowDiff)*1.01,200))
+    else:
+        plt.hist(windowDiff,bins=np.linspace(aPEScan[0],aPEScan[1],200))
     plt.xlabel("Signal Area (After Pedestal Subtraction)")
     plt.ylabel("Number of Events")
     plt.grid()
     plt.savefig(folderName + "mmD.png")
     ## zoomed in
-    plt.xticks( np.arange(zPEWinMin,zPEWinMax,0.05) , rotation=90)
-    plt.xlim(zPEWinMin,zPEWinMax)
+    plt.xticks( np.arange(aPEWinMin,aPEWinMax,aPEWidth) , rotation=90)
+    plt.xlim(aPEWinMin,aPEWinMax)
     plt.savefig(folderName + "mmD_zoomedIn.png")
     plt.cla()
 

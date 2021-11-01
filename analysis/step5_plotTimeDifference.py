@@ -20,15 +20,16 @@ if outFolder in parameters.keys():
     pars = parameters[outFolder]
 else:
     pars = parameters["Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss"]
-tdhistXMin = pars[6][0]
-tdhistXMax = pars[6][1]
-fitPars = pars[10]
-fitFunctionChoice = pars[12]
-binWidth = pars[13]
-freq = pars[14] # in Gss
-trig = pars[15]
+tdhistXMin,tdhistXMax = pars.tdhistX
+fitPars = pars.fitPars
+fitFunctionChoice = pars.fitFunctionChoice
+freq = pars.freq
+fitRan = pars.fitRan
 tfq = 1./freq
-timeDifference = np.load("processedData/{}/timeDifference.npz".format(outFolder))
+binWidth = pars.binWidth * tfq
+GausTimeFit = pars.GausTimeFit
+
+timeDifference = np.load("/eos/uscms/store/user/keanet/Hardware/analysis/processedData/{}/timeDifference.npz".format(outFolder))
 folderName = "plots/timeDiff/{}/".format(outFolder)
 ut.checkMakeDir(folderName)
 
@@ -43,6 +44,8 @@ bins=np.arange(tdhistXMin,tdhistXMax,binWidth)
 binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
 
 for key,item in timeDifference.items():
+    if key != "midPointSigEdge":
+        continue
     edgeTimeDiff = timeDifference[key]
     totalDataEntries,bins = np.histogram(edgeTimeDiff, bins=bins)
     # Generate enough x values to make the fit look smooth.
@@ -51,12 +54,20 @@ for key,item in timeDifference.items():
         binscentersFit = binscenters
         totalDataEntriesFit = totalDataEntries
     elif fitFunctionChoice == "Exp":
-        xspace = np.linspace(binscenters[np.argmax(totalDataEntries)],tdhistXMax,100000)
-        binscentersFit = binscenters[np.argmax(totalDataEntries):]
-        totalDataEntriesFit = totalDataEntries[np.argmax(totalDataEntries):]
+        fitRanMin,fitRanMax = fitRan
+        frmin = ut.indBasedVal(fitRanMin,binscenters)
+        frmax = ut.indBasedVal(fitRanMax,binscenters)
+        xspace = np.linspace(fitRanMin,fitRanMax,100000)
+        binscentersFit = binscenters[frmin:frmax]
+        totalDataEntriesFit = totalDataEntries[frmin:frmax]
 
-    popt, pcov = curve_fit(fitFunction, xdata=binscentersFit, ydata=totalDataEntriesFit, p0=fitPars,maxfev = 10000)
-    perr = np.sqrt(np.diag(pcov))
+    if fitFunctionChoice != None:
+        print(key)
+        print(totalDataEntriesFit)
+        print(binscentersFit)
+        popt, pcov = curve_fit(fitFunction, xdata=binscentersFit, ydata=totalDataEntriesFit, p0=fitPars,maxfev = 10000)
+        perr = np.sqrt(np.diag(pcov))
+
     # Plot the histogram and the fitted function.
     plt.figure(figsize=(12,8))
     ut.histplot(totalDataEntries,binscenters,'#2a77b4','Histogram entries')
@@ -72,15 +83,34 @@ for key,item in timeDifference.items():
         A = popt[1]
         terr = abs(f*errA/A)
         fParas = r"N={:.1f}$\pm${:.1f}; $\tau$={:.3f}$\pm${:.3f}".format(popt[0],perr[0],1/popt[1],terr)
-    plt.plot(xspace+binWidth/2., fitFunction(xspace, *popt), color='darkorange', linewidth=2.5,
-             label=fLabel)
-    plt.legend()
+        # fParas = r"N={:.1e}; $\tau$={:.3f}".format(popt[0],1/popt[1])
+    if fitFunctionChoice != None:
+        plt.plot(xspace+binWidth/2., fitFunction(xspace, *popt), color='darkorange', linewidth=2.5,
+                 label=fLabel)
     axes = plt.gca()
+    if GausTimeFit != False:
+        gfitRanMin = GausTimeFit[0]
+        gfitRanMax = GausTimeFit[2]
+        fgmin = ut.indBasedVal(gfitRanMin,binscenters)
+        fgmax = ut.indBasedVal(gfitRanMax,binscenters)
+        binscentersGFit = binscenters[fgmin:fgmax]
+        totalDataEntriesGFit = totalDataEntries[fgmin:fgmax]
+        gxspace = np.linspace(gfitRanMin,gfitRanMax,100000)
+
+        poptG, pcovG = curve_fit(ut.GaussianFit, xdata=binscentersGFit, ydata=totalDataEntriesGFit, p0=[100,GausTimeFit[1],10],maxfev = 10000)
+        perrG = np.sqrt(np.diag(pcovG))
+        plt.plot(gxspace+binWidth/2., ut.GaussianFit(gxspace, *poptG), color='red', linewidth=2.5)
+        plt.text(0.4,0.65,r"Gaus: N={:.1f}$\pm${:.1f}; $\mu$={:.3f}$\pm${:.3f}; $\sigma$={:.3f}$\pm${:.3f}".format(poptG[0],perrG[0],poptG[1],perrG[1],abs(poptG[2]),perrG[2]),fontsize=15,transform = axes.transAxes)
+    plt.legend()
     y_min, y_max = axes.get_ylim()
-    plt.text(0.5,0.75,fParas,fontsize=18,transform = axes.transAxes)
-    plt.text(0.5,0.7,"Events Analyse: {}".format(int(np.sum(totalDataEntriesFit))),fontsize=15,transform = axes.transAxes)
+    if fitFunctionChoice != None:
+        plt.text(0.4,0.75,fParas,fontsize=18,transform = axes.transAxes)
+        plt.text(0.5,0.7,"Events Analysed: {}".format(int(np.sum(totalDataEntriesFit))),fontsize=15,transform = axes.transAxes)
+    else:
+        plt.text(0.5,0.7,"Total Number of Events: {}".format(int(np.sum(totalDataEntries))),fontsize=15,transform = axes.transAxes)
+        plt.text(0.5,0.75,"Std. Dev.: {:.2f}".format(np.std(edgeTimeDiff)),fontsize=18,transform = axes.transAxes)
     plt.ylabel("Events")
     plt.xlabel("Time Difference between Signal and Trigger")
     # naming the histogram
-    plotname = "timeDifference_{}_{}".format(key,int(np.sum(totalDataEntriesFit)))
+    plotname = "timeDifference_{}_{}".format(key,fitFunctionChoice)
     plt.savefig(folderName + plotname + ".png")
