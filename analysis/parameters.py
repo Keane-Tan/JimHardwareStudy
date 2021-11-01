@@ -422,10 +422,13 @@ Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.tr
 Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.trig = "neg"
 Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.pedADC = 0.085
 Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.sPEADC = [0.065,0.12]
-Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitRan = [4,35]
 Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.tdhistX = [-5,40]
-Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitFunctionChoice = "Exp"
-Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitPars = [1000, 0.2]
+# Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitFunctionChoice = "Exp"
+# Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitRan = [4,35]
+# Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitPars = [1000, 0.2]
+Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitFunctionChoice = "Gaus"
+Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitRan = [0,5]
+Oct_28_cow_3_19_sample_6_1percentPPO_0p01percentPOPOP_260nm_to_small_sipm_56V.fitPars = [1000, 4, 10]
 
 parameters = {
 "Blue_laser_Keane_low_light_test_trig_1_SIPM_2_4p6V_5Gss":Blue_laser_Keane_low_light_test_trig_1_SIPM_2_4p6V_5Gss,
