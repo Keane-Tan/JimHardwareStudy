@@ -92,6 +92,13 @@ T3_all = []
 T4_all = []
 T43_all = []
 
+T3_count = 0
+T4_count = 0
+T43_count = 0
+
+T3_raw_100 = []
+T4_raw_100 = []
+
 for i in range(nDiv):
     finish = start + nSubEvents
     # print("Analyzing event {} to {}".format(start,finish))
@@ -126,6 +133,7 @@ for i in range(nDiv):
         if windowInfo_ch3:
             # sigEdge_ch3 = midPointEdge(windowInfo_ch3,lf_ch3)
             sigEdge_ch3 = ut.lineMatchEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS)
+            T3_count += 1
             # if count < 5000:
                 # print("event {}".format(count))
                 # print("signal edge: {}".format(sigEdge_ch3[0]))
@@ -136,7 +144,12 @@ for i in range(nDiv):
                     ch3_Time = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0) - triggerEdge
                 T3.append(ch3_Time)
                 T3_all.append(ch3_Time)
+                if len(T3_raw_100) < 100:
+                    sigEdge3 = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0)
+                    T3_raw_100.append(lf_ch3[int(sigEdge3/tpS)-50:])
+                    # T3_raw_100.append(lf_ch3)
         if windowInfo_ch4:
+            T4_count += 1
             # sigEdge_ch4 = midPointEdge(windowInfo_ch4,lf_ch4)
             sigEdge_ch4 = ut.lineMatchEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS)
             if sigEdge_ch4[1] < rsCut:
@@ -145,7 +158,12 @@ for i in range(nDiv):
                     ch4_Time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0) - triggerEdge
                 T4.append(ch4_Time)
                 T4_all.append(ch4_Time)
+                if len(T4_raw_100) < 100:
+                    sigEdge4 = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0)
+                    T4_raw_100.append(lf_ch4[int(sigEdge4/tpS)-50:])
+                    # T4_raw_100.append(lf_ch4)
         if windowInfo_ch3 and windowInfo_ch4:
+            T43_count += 1
             if sigEdge_ch3[1] < rsCut and sigEdge_ch4[1] < rsCut:
                 ch43_time = (sigEdge_ch4[0] - sigEdge_ch3[0])/2.
                 if minPedThresh:
@@ -161,7 +179,9 @@ for i in range(nDiv):
     # print("Number of data still kept in ch3: {}".format(np.sum(totalDataEntries_T3)))
     # print("Number of data still kept in ch4: {}".format(np.sum(totalDataEntries_T4)))
     start += nSubEvents
-
+print("T3_count: {}".format(T3_count))
+print("T4_count: {}".format(T4_count))
+print("T43_count: {}".format(T43_count))
 # print("Histogram for all T3 {} events:".format(np.sum(totalDataEntries_T3)))
 # print(totalDataEntries_T3)
 # print("Histogram for all T4 {} events:".format(np.sum(totalDataEntries_T4)))
@@ -174,6 +194,8 @@ else:
     folderName = "plots/timeDiff_lineMatch/{}/".format(outFolder)
 if not os.path.isdir(folderName):
     os.system("mkdir {}".format(folderName))
+if not os.path.isdir("plots/signal_100/{}/".format(outFolder)):
+    os.system("mkdir {}".format("plots/signal_100/{}/".format(outFolder)))
 plotname = "T3_T4_T43"
 
 xspace = np.linspace(tdhistXMin,tdhistXMax,100000)
@@ -188,7 +210,9 @@ ut.fitAndPlot(totalDataEntries_T4,binscentersFit,'#9467bd',fitPars_T4,fitFunctio
 ut.histplot(totalDataEntries_T43,binscenters,color='#ff7f0e',label="(T4-T3)/2")
 ut.fitAndPlot(totalDataEntries_T43,binscentersFit,'#17becf',fitPars_T43,fitFunction,xspace)
 axes = plt.gca()
-plt.text(0.6,0.6,"Number of cosmic events = %i"%(np.sum(totalDataEntries_T43)),transform = axes.transAxes)
+# plt.text(0.6,0.6,"Number of T3 events = %i"%(T3_count),transform = axes.transAxes)
+# plt.text(0.6,0.55,"Number of T4 events = %i"%(T4_count),transform = axes.transAxes)
+plt.text(0.6,0.5,"Number of T3,T4 events = %i"%(T43_count),transform = axes.transAxes)
 plt.xticks(np.arange(tdhistXMin,tdhistXMax,10))
 plt.grid()
 plt.legend(loc="best")
@@ -196,3 +220,19 @@ plt.xlabel("Time (ns)")
 plt.ylabel("Events")
 plt.ylim(0)
 plt.savefig(folderName + plotname + ".png")
+
+plt.figure(figsize=(12,8))
+for i in range(100):
+    plt.plot(np.arange(0,len(T3_raw_100[i]))*tpS,T3_raw_100[i])
+plt.savefig("plots/signal_100/{}/T3100.png".format(outFolder))
+plt.xlim(20,60)
+# plt.ylim(-0.008,0)
+plt.savefig("plots/signal_100/{}/T3100_zoom.png".format(outFolder))
+
+plt.figure(figsize=(12,8))
+for i in range(100):
+    plt.plot(np.arange(0,len(T4_raw_100[i]))*tpS,T4_raw_100[i])
+plt.savefig("plots/signal_100/{}/T4100.png".format(outFolder))
+plt.xlim(20,60)
+# plt.ylim(-0.008,0)
+plt.savefig("plots/signal_100/{}/T4100_zoom.png".format(outFolder))

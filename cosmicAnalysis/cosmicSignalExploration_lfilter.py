@@ -212,7 +212,7 @@ for count in range(0,eRun):
         if rs < 0.005:
             rsList.append(rs)
         sigEdge = ut.midPointEdge(windowInfo,lf,tpS)
-        if len(SiPM_smooth_50) < 50:
+        if len(SiPM_smooth_50) < 20:
             passedIndex.append(count)
             SiPM_smooth_50.append(SiPM_val_i)
             trigger_smooth_50.append(trig_val_i)
@@ -234,9 +234,9 @@ if rawPlot:
     # ut.plotNEvents(cosmic_50,"rawCosmics",outFolder,10,zTWinMin,zTWinMax,tpS)
     # ut.plotNEvents(cosmic_1000,"rawCosmics",outFolder,1000,zTWinMin,zTWinMax,tpS)
     # ut.plotNEvents(cosmic_all,"rawCosmics",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
-    # ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWinMin,zTWinMax,tpS)
-    # ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWinMin,zTWinMax,tpS)
-    # ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWinMin,zTWinMax,tpS)
+    ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
 
 # histogram difference between ADC min vs ADC max in signal region
 print("Making pedestal ADC plots...")
@@ -302,16 +302,18 @@ if PEPlot:
     plt.legend()
     # plt.yscale("log")
     plt.title("LED Ch{}: {}".format(channel,outFolder),y=1.02,fontsize=12)
+    plt.ylim(0,np.nanmax(data_entries[1:]))
     plt.savefig(folderName + "int.png")
     if not noGausFit:
         meanList = []
         for p0 in PEp0List:
-            meanList.append(ut.fitPEPeak(data_entries,binscenters,p0-hw,p0+hw,[100,p0,0.1],"red"))
+            meanList.append(ut.fitPEPeak(data_entries[1:],binscenters[1:],p0-hw,p0+hw,[100,p0,0.1],"red"))
         gainList = []
         for i in range(len(meanList)-1):
             gainList.append(meanList[i+1]-meanList[i])
         axes = plt.gca()
-        plt.text(0.65,0.5,"Average gain: {:.2f}".format(np.mean(gainList)),transform = axes.transAxes)
+        print("Average gain: {:.2f}".format(np.mean(gainList)))
+        plt.text(0.1,0.9,"Average gain: {:.2f}".format(np.mean(gainList)),transform = axes.transAxes)
     plt.xlim(zPEWinMin,zPEWinMax)
     plt.xticks(np.arange(zPEWinMin,zPEWinMax,0.1))
     # plt.grid()

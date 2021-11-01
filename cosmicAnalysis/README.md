@@ -41,7 +41,9 @@ using only the single-PE events.
 
 6. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again. Update parameters:
 * `zCoWin_c3` (intCosmic.png)
+* `zCoWidth_c3` (intCosmic.png)
 * `zCoWin_c4` (intCosmic.png)
+* `zCoWidth_c4` (intCosmic.png)
 
 7. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again. Update parameters:
 * `pedADC_c3` (intCosmic_zoom.png)
@@ -49,15 +51,15 @@ using only the single-PE events.
 
 8. `python cosmicSignalExploration_lfilter.py -d [filename].root -p` again.
 
-9. `python cosmicSignalExploration_lfilter.py -d [filename].root -m`. Update parameters:
-* `zDWin_c3`
-* `zDWin_c4`
+9. `python cosmicSignalExploration_lfilter.py -d [filename].root -m`. Look at `minPedDiff` and update parameters:
+* `zDWin_c3` (mpDLED.png)
+* `zDWin_c4` (mpDLED.png)
 
 10. `python cosmicSignalExploration_lfilter.py -d [filename].root -m` again. Update parameters:
-* `pD0_c3`
-* `hDw_c3`
-* `pD0_c4`
-* `hDw_c4`
+* `pD0_c3` (mpDLED_zoom.png)
+* `hDw_c3` (mpDLED_zoom.png)
+* `pD0_c4` (mpDLED_zoom.png)
+* `hDw_c4` (mpDLED_zoom.png)
 
 11. `python cosmicSignalExploration_lfilter.py -d [filename].root -m` again. Update parameters:
 * `pD0_c3`
