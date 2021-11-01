@@ -9,7 +9,7 @@ from utils import utility as ut
 mpl.rc("font", family="serif", size=20)
 
 parser = optparse.OptionParser("usage: %prog [options]\n")
-parser.add_option('-d', dest='filename', type='string', default='Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss.root', help="File name")
+parser.add_option('-d', dest='filename', type='string', default='Blue_laser_Keane_low_light_test_trig_1_SIPM_2_4p6V_5Gss.root', help="File name")
 options, args = parser.parse_args()
 
 filename = options.filename
@@ -48,15 +48,14 @@ for key,item in timeDifference.items():
         continue
     edgeTimeDiff = timeDifference[key]
     totalDataEntries,bins = np.histogram(edgeTimeDiff, bins=bins)
-    # Generate enough x values to make the fit look smooth.
+    fitRanMin,fitRanMax = fitRan
+    frmin = ut.indBasedVal(fitRanMin,binscenters)
+    frmax = ut.indBasedVal(fitRanMax,binscenters)
     if fitFunctionChoice == "Gaus":
-        xspace = np.linspace(tdhistXMin,tdhistXMax,100000)
-        binscentersFit = binscenters
-        totalDataEntriesFit = totalDataEntries
+        xspace = np.linspace(fitRanMin,fitRanMax,100000)
+        binscentersFit = binscenters[frmin:frmax]
+        totalDataEntriesFit = totalDataEntries[frmin:frmax]
     elif fitFunctionChoice == "Exp":
-        fitRanMin,fitRanMax = fitRan
-        frmin = ut.indBasedVal(fitRanMin,binscenters)
-        frmax = ut.indBasedVal(fitRanMax,binscenters)
         xspace = np.linspace(fitRanMin,fitRanMax,100000)
         binscentersFit = binscenters[frmin:frmax]
         totalDataEntriesFit = totalDataEntries[frmin:frmax]
