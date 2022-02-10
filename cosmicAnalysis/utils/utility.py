@@ -250,6 +250,6 @@ def fitAndPlot(totalDataEntries,binscentersFit,color,fitPars,fitFunction,xspace)
     fitPars[1] = mode
     popt, pcov = curve_fit(fitFunction, xdata=binscentersFit, ydata=totalDataEntriesFit, p0=fitPars,maxfev = 10000)
     perr = np.sqrt(np.diag(pcov))
-    fParas = r"$\mu$={:.2f}({:.2f}); $\sigma$={:.2f}({:.2f})".format(popt[1],perr[1],abs(popt[2]),perr[2])
+    fParas = r"$\mu$={:.2f}({:.2f}); $\sigma$={:.3f}({:.3f})".format(popt[1],perr[1],abs(popt[2]),perr[2])
     plt.plot(xspace, fitFunction(xspace, *popt), color=color, linewidth=3,label=fParas)
     print(fParas)
