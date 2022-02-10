@@ -32,7 +32,6 @@ zPEWinMin,zPEWinMax = pars.zPEWin
 trigValue = pars.trigValue
 freq = pars.freq # in Gss
 trigPol = pars.trigPol
-zPEScan = pars.zPEScan
 
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
@@ -108,10 +107,7 @@ if PEPlot:
     folderName = "plots/minThreshold/{}/".format(outFolder)
     ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))
-    if zPEScan == "auto":
-        plt.hist(windowDiff,bins=np.linspace(0,max(windowDiff)*1.01,200))
-    else:
-        plt.hist(windowDiff,bins=np.linspace(zPEScan[0],zPEScan[1],200))
+    plt.hist(windowDiff,bins=np.linspace(0,max(windowDiff)*1.01,200))
     plt.xlabel("Signal Area (After Pedestal Subtraction)")
     plt.ylabel("Number of Events")
     plt.grid()
