@@ -11,6 +11,7 @@ from scipy import signal
 import sys
 import optparse
 import os
+import pandas as pd
 from parameters import parameters
 from utils import utility as ut
 mpl.rc("font", family="serif", size=15)
@@ -23,6 +24,7 @@ parser.add_option('-p', dest='PEPlot', action="store_true", help="Plotting the P
 parser.add_option('-n', dest='noGausFit', action="store_true", help="Do not fit Gaussian to the PE peaks")
 parser.add_option('-m', dest='minPEDiff', action="store_true", help="Plotting the difference between minimum and Pedestal")
 parser.add_option('-s', dest='smoothFit', action="store_true", help="Plotting smooth fit on the signals")
+parser.add_option('-k', dest='scatter', action="store_true", help="Make npz files for making scatter PE plots.")
 options, args = parser.parse_args()
 filename = options.filename
 rawPlot = options.rawPlot
@@ -31,15 +33,18 @@ PEPlot = options.PEPlot
 noGausFit = options.noGausFit
 smoothFit = options.smoothFit
 channel = options.channel
+scatter = options.scatter
 
 outFolder = filename[:filename.find(".root")]
 # parameters
 if outFolder in parameters.keys():
     pars = parameters[outFolder]
 else:
+    print("Using cosmics_Mar_8")
     pars = parameters["cosmics_Mar_8_1p4fiber_90cm_4by1by14_one_hole_white_extrusion_5p2meter_long"]
 
 tpS = pars.tpS
+avgpelab = ""
 if channel == "3":
     pedADC = pars.pedADC_c3
     sPEADCMin = pars.sPEADCMin_c3[0]
@@ -62,6 +67,7 @@ if channel == "3":
     hDw = pars.hDw_c3
     p0Cosmic = pars.p0Cosmic_c3
     hwCosmic = pars.hwCosmic_c3
+    avgpelab = "Avg PE (Ch3)"
 elif channel == "4":
     pedADC = pars.pedADC_c4
     sPEADCMin = pars.sPEADCMin_c4[0]
@@ -84,6 +90,7 @@ elif channel == "4":
     hDw = pars.hDw_c4
     p0Cosmic = pars.p0Cosmic_c4
     hwCosmic = pars.hwCosmic_c4
+    avgpelab = "Avg PE (Ch4)"
 zTWinMin = pars.zTWin[0]
 zTWinMax = pars.zTWin[1]
 # parameters for fitting savgol
@@ -98,6 +105,93 @@ offset = pars.lowpassFit[3]
 # other parameters
 trigValue = pars.trigValue
 
+def addCol(outFolder,newRow,columnName,parDict=None):
+    ft = ""
+    newoutFolder = outFolder
+    if parDict != None:
+        if type(parDict) is list:
+            for item in parDict:
+                if item in outFolder:
+                    ft = item
+                    newoutFolder = newoutFolder.replace(item,"")
+                    break
+        else:
+            for key, item in parDict.items():
+                if key in outFolder:
+                    ft = item
+                    newoutFolder = newoutFolder.replace(key,"")
+                    break
+    if columnName == "Date":
+        ind1 = newoutFolder.find("_")
+        ind2 = newoutFolder[ind1+1:].find("_") + ind1 + 1
+        ind3 = newoutFolder[ind2+1:].find("_") + ind2 + 1
+        ft = newoutFolder[ind1+1:ind3]
+    if ft == "":
+        newRow[columnName] = "Other"
+    else:
+        newRow[columnName] = ft
+    return newoutFolder
+
+if os.path.isfile("avgPE.csv"):
+    df = pd.read_csv("avgPE.csv",index_col=False)
+else:
+    df = pd.DataFrame(columns=["Filename","Date","Fiber Type","Fiber Diameter","Fiber Length","Excitation Point","Extrusion Dimension","Avg PE (Ch3)","Avg PE (Ch4)"])
+newRow = {}
+newRow["Filename"] = outFolder
+newoutFolder = addCol(outFolder,newRow,"Date")
+fiberType = {
+"BCF92":"BCF-92",
+"Uniplast":"BCF-92_Uniplast",
+"Kuraray":"Y-11",
+"Mu2e_Kur":"Y-11",
+"1MJ":"YS-1",
+"2MJ":"YS-2",
+"4MJ":"YS-4",
+"YS4":"YS-4",
+"6MJ":"YS-6"
+}
+newoutFolder = addCol(outFolder,newRow,"Fiber Type",fiberType)
+fiberDiameter = [
+"1p0mm",
+"1p2mm",
+"1p5mm",
+"1p8mm"
+]
+newoutFolder = addCol(newoutFolder,newRow,"Fiber Diameter",fiberDiameter)
+fiberLength = [
+"560cm",
+"520cm",
+"500cm",
+"310cm"
+]
+newoutFolder = addCol(newoutFolder,newRow,"Fiber Length",fiberLength)
+excitationPoint = [
+"510cm",
+"500cm",
+"480cm",
+"450cm",
+"300cm",
+"280cm",
+"260cm",
+"250cm",
+"160cm",
+"150cm",
+"90cm",
+"50cm",
+"40cm",
+"20cm",
+]
+newoutFolder = addCol(newoutFolder,newRow,"Excitation Point",excitationPoint)
+extrusionDim = {
+"5by1by14":"5x1x14",
+"5by1by20":"5x1x20",
+"5by2by20":"5x2x20",
+"5x5x2CM":"5x5x2",
+"5by2by50":"5x2x50",
+"4by1by50":"4x1x50"
+}
+newoutFolder = addCol(newoutFolder,newRow,"Extrusion Dimension",extrusionDim)
+print(newRow)
 
 inputFolder = "dataFiles/"
 tf = rt.TFile.Open(inputFolder + filename)
@@ -110,13 +204,14 @@ windowDiff_trigger = []
 windowDiff_cosmic = []
 windowInt_trigger = []
 windowInt_cosmic = []
+event_cosmic = []
 minPedDiff_cosmic = []
 minPedDiff_trigger = []
 # for plotting raw signals and triggers
 SiPM_50 = []
 SiPM_1000 = []
-SiPM_cosmic = []
-SiPM_trigger = []
+SiPM_cosmic_1000 = []
+SiPM_trigger_1000 = []
 cosmic_50 = []
 cosmic_1000 = []
 cosmic_all = []
@@ -187,8 +282,10 @@ for count in range(0,eRun):
         lf = np.concatenate( (lf,[eventPedADC]*offset) )
         ADCInt = ut.signalIntegral(lf,sSiPMWinMin,sSiPMWinMax,tpS)
         minPedDiff = ut.minPedDiff(lf,sSiPMWinMin,sSiPMWinMax,tpS)
-        SiPM_cosmic.append(SiPM_val_i)
+        if len(SiPM_cosmic_1000) < 1000:
+            SiPM_cosmic_1000.append(SiPM_val_i)
         windowInt_cosmic.append(ADCInt)
+        event_cosmic.append(count)
         minPedDiff_cosmic.append(minPedDiff)
     else:
         eventPedADC = ut.signalPedestal(lf,sLEDWinMin,tpS)
@@ -196,7 +293,8 @@ for count in range(0,eRun):
         ADCInt = ut.signalIntegral(lf,sLEDWinMin,sLEDWinMax,tpS)
         # ADCInt = ut.signalIntegralNoPSub(lf,sLEDWinMin,sLEDWinMax,tpS)
         minPedDiff = ut.minPedDiff(lf,sLEDWinMin,sLEDWinMax,tpS)
-        SiPM_trigger.append(SiPM_val_i)
+        if len(SiPM_trigger_1000) < 1000:
+            SiPM_trigger_1000.append(SiPM_val_i)
         windowInt_trigger.append(ADCInt)
         minPedDiff_trigger.append(minPedDiff)
     # this information is used for plotting the SiPM signals that pass requirement
@@ -219,8 +317,6 @@ for count in range(0,eRun):
             lf_smooth_50.append(lf)
             window_smooth_50.append(windowInfo)
 print("Number of passed events: {}".format(eventCol))
-print("SiPM_cosmic size: {}".format(len(SiPM_cosmic)))
-print("SiPM_LED size: {}".format(len(SiPM_trigger)))
 print("CH{}".format(channel))
 if rawPlot:
     if channel == "3":
@@ -229,14 +325,14 @@ if rawPlot:
         subfolder = "rawSignals_ch4"
     ut.plotNEvents(SiPM_50,subfolder,outFolder,10,0,1000*tpS,tpS)
     ut.plotNEvents(SiPM_1000,subfolder,outFolder,1000,0,1000*tpS,tpS)
-    ut.plotNEvents(SiPM_cosmic,subfolder,outFolder,len(SiPM_cosmic),sSiPMWinMin,sSiPMWinMax,tpS,"cosmic")
-    ut.plotNEvents(SiPM_trigger,subfolder,outFolder,len(SiPM_trigger),sLEDWinMin,sLEDWinMax,tpS,"LED")
+    ut.plotNEvents(SiPM_cosmic_1000,subfolder,outFolder,len(SiPM_cosmic_1000),sSiPMWinMin,sSiPMWinMax,tpS,"cosmic")
+    ut.plotNEvents(SiPM_trigger_1000,subfolder,outFolder,len(SiPM_trigger_1000),sLEDWinMin,sLEDWinMax,tpS,"LED")
     # ut.plotNEvents(cosmic_50,"rawCosmics",outFolder,10,zTWinMin,zTWinMax,tpS)
     # ut.plotNEvents(cosmic_1000,"rawCosmics",outFolder,1000,zTWinMin,zTWinMax,tpS)
     # ut.plotNEvents(cosmic_all,"rawCosmics",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
     ut.plotNEvents(trigger_50,"rawTriggers",outFolder,10,zTWinMin,zTWinMax,tpS)
     ut.plotNEvents(trigger_1000,"rawTriggers",outFolder,1000,zTWinMin,zTWinMax,tpS)
-    ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
+    # ut.plotNEvents(trigger_all,"rawTriggers",outFolder,nEvents,zTWinMin,zTWinMax,tpS)
 
 # histogram difference between ADC min vs ADC max in signal region
 print("Making pedestal ADC plots...")
@@ -339,7 +435,10 @@ if PEPlot:
     plt.xlim(zCoWinMin,zCoWinMax)
     cutInd = 0
     avgCosPE = []
-    for wInt in windowInt_cosmic:
+    pewEvent = {}
+    for j in range(len(windowInt_cosmic)):
+        wInt = windowInt_cosmic[j]
+        pewEvent[str(event_cosmic[j])] = wInt
         if wInt > pedADC:
             avgCosPE.append(wInt)
     for i in range(len(data_entries)):
@@ -347,9 +446,25 @@ if PEPlot:
             cutInd = i
             break
     # print(avgCosPE)
-    stdErr = np.std(avgCosPE,ddof=1)/np.sqrt(len(avgCosPE))
+    std = np.std(avgCosPE,ddof=1)
+    stdErr = std/np.sqrt(len(avgCosPE))
+    avgPERes = "{:.1f}({:.1f})".format(np.mean(avgCosPE),std)
     axes = plt.gca()
-    plt.text(0.6,0.65,"Avg. photoelectrons: {:.1f}({:.1f})".format(np.mean(avgCosPE),stdErr),transform = axes.transAxes)
+    plt.text(0.6,0.65,"Avg. photoelectrons: {:.1f}({:.1f})".format(np.mean(avgCosPE),std),transform = axes.transAxes)
+    newRow[avgpelab] = avgPERes
+    oldData = False
+    for fname in df["Filename"]:
+        if outFolder == fname:
+            oldData = True
+            break
+    if oldData == True and avgpelab == "Avg PE (Ch4)":
+        ind = df.index[df["Filename"] == outFolder]
+        df.at[ind,avgpelab] = avgPERes
+    if oldData == False:
+        df = df.append(newRow, ignore_index = True)
+    print(df)
+    sortedtotalDf = df.sort_values("Date")
+    df.to_csv("avgPE.csv",index=False)
     plt.ylim(0,np.amax(data_entries[cutInd:])*1.1)
     plt.xticks(np.arange(zCoWinMin,zCoWinMax,zCoWidth))
     plt.vlines(pedADC,0,np.amax(data_entries[cutInd:])*1.1,label="PE Threshold",color="red")
@@ -360,6 +475,13 @@ if PEPlot:
     # plt.hist(windowInt_cosmic,bins=np.arange(0,max(windowDiff_trigger)*1.01,0.01),color='#2a77b4',label="Cosmic")
     plt.legend()
     plt.savefig(folderName + "intCosmic_zoom.png")
+    if scatter:
+        if channel == "3":
+            scFolder = "plots/scatterPE_ch3/{}".format(outFolder)
+        elif channel == "4":
+            scFolder = "plots/scatterPE_ch4/{}".format(outFolder)
+        ut.checkMakeDir(scFolder)
+        np.savez("{}/scatterPE".format(scFolder),**pewEvent)
 
 # plot the smoothing fit
 if smoothFit:
