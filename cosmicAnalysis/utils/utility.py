@@ -105,7 +105,7 @@ def minPedThreshEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,plot=False,nPE = 1.0)
         axes = plt.gca()
         plt.vlines(edgeTime,min(SiPM_val_i),0,color="orange")
         plt.hlines(0-sPEADC+signalPedestal(SiPM_val_i,sWinMin,tpS),sWinMin-10,sWinMax+10,color="orange")
-        plt.text(0.65,0.5,"Signal edge (MPT) = {:.4f}".format(edgeTime),transform = axes.transAxes)
+        plt.text(0.65,0.5,"Signal edge = {:.2f}".format(edgeTime),transform = axes.transAxes)
     return edgeTime
 
 def midPointEdge(windowInfo,SiPM_val_i,tpS,percent=0.6):
@@ -159,7 +159,7 @@ def lineMatchEdge(SiPM_val_i,sWinMin,sWinMax,tpS,plot=False):
     else:
         return [-999,np.Inf]
 
-def fitPEPeak(data_entries,binscenters,xmin,xmax,p0List,color,fitFunc=GaussianFit):
+def fitPEPeak(data_entries,binscenters,xmin,xmax,p0List,color="red",meanLab=r"$\mu$",fitFunc=GaussianFit):
     fitBins = []
     fitData = []
     for i in range(len(binscenters)):
@@ -168,7 +168,7 @@ def fitPEPeak(data_entries,binscenters,xmin,xmax,p0List,color,fitFunc=GaussianFi
             fitData.append(data_entries[i])
     popt, pcov = curve_fit(fitFunc, xdata=fitBins, ydata=fitData, p0=p0List, maxfev = 10000)
     xspace = np.linspace(min(fitBins),max(fitBins),1000)
-    plt.plot(xspace, fitFunc(xspace, *popt), color=color, linewidth=3,label="mean = {:.4f}".format(popt[1]))
+    plt.plot(xspace, fitFunc(xspace, *popt), color=color, linewidth=3,label=r"{} = {:.4f}".format(meanLab,popt[1]))
     return popt[1]
 
 def histplot(data,bins,color,label):
