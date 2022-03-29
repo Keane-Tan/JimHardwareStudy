@@ -212,7 +212,7 @@ ut.fitAndPlot(totalDataEntries_T43,binscentersFit,'#17becf',fitPars_T43,fitFunct
 axes = plt.gca()
 # plt.text(0.6,0.6,"Number of T3 events = %i"%(T3_count),transform = axes.transAxes)
 # plt.text(0.6,0.55,"Number of T4 events = %i"%(T4_count),transform = axes.transAxes)
-plt.text(0.6,0.5,"Number of T3,T4 events = %i"%(T43_count),transform = axes.transAxes)
+plt.text(0.6,1.05,"Number of T3,T4 events = %i"%(T43_count),transform = axes.transAxes)
 plt.xticks(np.arange(tdhistXMin,tdhistXMax,10))
 plt.grid()
 plt.legend(loc="best")

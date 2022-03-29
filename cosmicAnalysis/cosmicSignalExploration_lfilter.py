@@ -402,8 +402,11 @@ if PEPlot:
     plt.savefig(folderName + "int.png")
     if not noGausFit:
         meanList = []
+        count = 0
+        colors = ["red","orange","magenta","cyan","green","black","yellow"]
         for p0 in PEp0List:
-            meanList.append(ut.fitPEPeak(data_entries[1:],binscenters[1:],p0-hw,p0+hw,[100,p0,0.1],"red"))
+            meanList.append(ut.fitPEPeak(data_entries[1:],binscenters[1:],p0-hw,p0+hw,[100,p0,0.1],color=colors[count],meanLab=r"$\mu$"+str(count)))
+            count += 1
         gainList = []
         for i in range(len(meanList)-1):
             gainList.append(meanList[i+1]-meanList[i])
@@ -466,7 +469,7 @@ if PEPlot:
     sortedtotalDf = df.sort_values("Date")
     df.to_csv("avgPE.csv",index=False)
     plt.ylim(0,np.amax(data_entries[cutInd:])*1.1)
-    plt.xticks(np.arange(zCoWinMin,zCoWinMax,zCoWidth))
+    # plt.xticks(np.arange(zCoWinMin,zCoWinMax,zCoWidth))
     plt.vlines(pedADC,0,np.amax(data_entries[cutInd:])*1.1,label="PE Threshold",color="red")
     plt.xlabel("Number of Photoelectrons")
     plt.ylabel("Event")
@@ -526,16 +529,16 @@ if smoothFit:
         # plt.text(75,ADC_85,"85 %",color="red",fontsize=13)
         plt.hlines(minSig,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
         plt.text(75,minSig,"100 %",color="red",fontsize=13)
-        ut.lineMatchEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,plot=True)
+        # ut.lineMatchEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,plot=True)
         ut.minPedThreshEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,pD0,plot=True)
         plt.ylabel("ADC Current")
         plt.xlabel("time (ns)")
         # plt.xlim(10,490)
         plt.ylim(min(SiPM_val_i)-0.001,0.001)
-        plt.text(0,0,"Event {}".format(passedInd),transform = axes.transAxes)
-        plt.text(0.65,0.75,"Trigger Time = {:.2f}".format(triggerEdge),transform = axes.transAxes)
-        plt.text(0.65,0.85,"Signal Area = {:.2f}".format(area),transform = axes.transAxes)
-        plt.text(0.65,0.65,"Pedestal Area = {:.2f}".format(pedArea),transform = axes.transAxes)
+        plt.text(0.65,0.65,"Event {}".format(passedInd),transform = axes.transAxes)
+        # plt.text(0.65,0.75,"Trigger Time = {:.2f}".format(triggerEdge),transform = axes.transAxes)
+        plt.text(0.65,0.6,"Pedestal Area = {:.2f}".format(pedArea),transform = axes.transAxes)
+        plt.text(0.65,0.55,"Signal Area = {:.2f}".format(area),transform = axes.transAxes)
         plt.legend(fontsize=15,loc="lower right")
         plt.savefig(folderName + "passedEvent{}.png".format(passedInd))
         plt.cla()
