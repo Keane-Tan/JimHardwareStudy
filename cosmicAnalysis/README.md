@@ -70,3 +70,4 @@ using only the single-PE events.
 13. `python cosmicTimeDifference_lfilter.py -d [filename].root -m`. Update parameter `tdhistX` if needed.
 
 * I usually open two terminals and run these set of codes on one terminal, and run the same sets of codes with the `-c 4` flag on another terminal.
+* Now I still have to run `python cosmicSignalExploration_lfilter.py -d [filename].root -p` and then `python cosmicSignalExploration_lfilter.py -d [filename].root -p -c 4` to save the avgPE in avgPE.csv correctly.
