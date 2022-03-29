@@ -20,6 +20,7 @@ sWinMin,sWinMax = pars.sWin
 trigValue = pars.trigValue
 freq = pars.freq # in Gss
 trigPol = pars.trigPol
+filtOffset = pars.filtOffset
 
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
@@ -67,7 +68,10 @@ for count in eventList:
     sigWinMax = triggerEdge+sWinMax
     SiPM_val_i = sigRedNoise[str(count)]
     sf = ut.butter_lowpass_filter(SiPM_val_i,300,5120,6)
-    offset = ut.filterOffset(trig_val_i,trigValue,trigPol)
+    if filtOffset == "auto":
+        offset = ut.filterOffset(trig_val_i,trigValue,trigPol)
+    else:
+        offset = filtOffset
     sf = sf[offset:]
     eventPedADC = ut.signalPedestal(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax)
     sf = np.concatenate( (sf,[eventPedADC]*offset) )

@@ -19,7 +19,8 @@ outFolder = filename[:filename.find(".root")]
 if outFolder in parameters.keys():
     pars = parameters[outFolder]
 else:
-    pars = parameters["Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss"]
+    print("Using Blue_laser_Keane_low_light_test_trig_1_SIPM_2_4p6V_5Gss")
+    pars = parameters["Blue_laser_Keane_low_light_test_trig_1_SIPM_2_4p6V_5Gss"]
 tdhistXMin,tdhistXMax = pars.tdhistX
 fitPars = pars.fitPars
 fitFunctionChoice = pars.fitFunctionChoice

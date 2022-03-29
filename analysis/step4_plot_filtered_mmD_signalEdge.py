@@ -113,10 +113,10 @@ for count in eventList:
                 plt.plot(np.arange(0,len(SiPM_val_raw))*tfq,SiPM_val_raw,label="Raw SiPM signal")
                 plt.plot(np.arange(0,len(sf))*tfq,sf,label="Filtered SiPM Signal")
                 bottom,top = plt.ylim()
-                plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent),bottom,top,color="red",label="SiPM Signal Edge 60%")
-                plt.vlines(ut.minEdge(windowInfo,sf,tfq),bottom,top,color="orange",label="SiPM Signal Edge (minimum)")
-                if ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 1.0) != -999:
-                    plt.vlines(ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 1.0),bottom,top,color="magenta",label="SiPM Signal Edge (1 PE)")
+                plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent),bottom,top,color="red",label="Signal Edge")
+                # plt.vlines(ut.minEdge(windowInfo,sf,tfq),bottom,top,color="orange",label="SiPM Signal Edge (minimum)")
+                # if ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 1.0) != -999:
+                #     plt.vlines(ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 1.0),bottom,top,color="magenta",label="SiPM Signal Edge (1 PE)")
                 plt.vlines(sigWinMin,bottom,top,label="Time Window for Signal ID")
                 plt.vlines(sigWinMax,bottom,top)
                 plt.ylabel("ADC Current")
