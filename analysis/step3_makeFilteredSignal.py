@@ -5,6 +5,7 @@ import numpy as np
 import optparse
 from parameters import parameters
 from utils import utility as ut
+import os
 
 mpl.rc("font", family="serif", size=15)
 
@@ -87,6 +88,8 @@ for count in eventList:
         plt.ylabel("ADC")
         plt.savefig(plotfolderName + "filteredSignal_{}.png".format(count))
 
-fullOutFolder = "/eos/uscms/store/user/keanet/Hardware/analysis/processedData/{}".format(outFolder)
-ut.checkMakeDir(fullOutFolder)
-np.savez("{}/filtSig".format(fullOutFolder),**filSigs)
+localOutFolder = "processedData/{}".format(outFolder)
+fullOutFolder = "root://cmseos.fnal.gov//store/user/keanet/Hardware/analysis/processedData/{}".format(outFolder)
+np.savez_compressed("{}/filtSig".format(localOutFolder),**filSigs)
+os.system("xrdcp -rf {}/filtSig.npz {}/filtSig.npz".format(localOutFolder,fullOutFolder))
+os.system("rm {}/filtSig.npz".format(localOutFolder))

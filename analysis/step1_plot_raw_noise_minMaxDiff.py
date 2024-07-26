@@ -42,6 +42,7 @@ tf = rt.TFile.Open(inputFolder + filename)
 tr = tf.Get("T")
 nEvents = tr.GetEntries()
 
+print("Total number of raw events: {}".format(nEvents))
 # for plotting raw signals and triggers
 SiPM_50 = []
 trigger_50 = []
@@ -108,7 +109,7 @@ if PEPlot:
     ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))
     plt.hist(windowDiff,bins=np.linspace(0,max(windowDiff)*1.01,200))
-    plt.xlabel("Signal Area (After Pedestal Subtraction)")
+    plt.xlabel("Minimum Signal ADC")
     plt.ylabel("Number of Events")
     plt.grid()
     plt.savefig(folderName + "mmD.png")
@@ -133,6 +134,7 @@ if trigTimeD:
     plt.cla()
 
 if aveNoise:
+    print("Noise events: {}".format(len(noiseList)))
     folderName = "plots/aveNoise/{}/".format(outFolder)
     ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))

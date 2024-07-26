@@ -101,7 +101,8 @@ for count in eventList:
     windowInfo = ut.signalExist(sf,triggerEdge,tfq,pedADC,sPEADCMin,sPEADCMax,sWinMin,sWinMax,True)
     if windowInfo:
         if timeDiff:
-            midPointSigEdge.append(ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent) - triggerEdge)
+            midADC,mpSE = ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent)
+            midPointSigEdge.append(mpSE - triggerEdge)
             minSigEdge.append(ut.minEdge(windowInfo,sf,tfq) - triggerEdge)
             minPedEdge_0p5.append(ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 0.5) - triggerEdge)
             minPedEdge_0p75.append(ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 0.75) - triggerEdge)
@@ -109,26 +110,29 @@ for count in eventList:
         if sigEdgeFit:
             passedFilt.append(sf)
             if sefCount < 50:
+                midADC,mpSE = ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent)
                 plt.figure(figsize=(12,8))
                 plt.plot(np.arange(0,len(SiPM_val_raw))*tfq,SiPM_val_raw,label="Raw SiPM signal")
                 plt.plot(np.arange(0,len(sf))*tfq,sf,label="Filtered SiPM Signal")
                 bottom,top = plt.ylim()
-                plt.vlines(ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent),bottom,top,color="red",label="Signal Edge")
+                plt.vlines(mpSE,bottom,top,color="red",label="Signal Edge")
+                plt.hlines(midADC,sigWinMin,sigWinMax,color="red",linestyle=":",linewidth=3,label="60% between Max and Min ADC")
                 # plt.vlines(ut.minEdge(windowInfo,sf,tfq),bottom,top,color="orange",label="SiPM Signal Edge (minimum)")
                 # if ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 1.0) != -999:
                 #     plt.vlines(ut.peFracEdge(sf,triggerEdge,sWinMin,sWinMax,tfq,pD0,nPE = 1.0),bottom,top,color="magenta",label="SiPM Signal Edge (1 PE)")
-                plt.vlines(sigWinMin,bottom,top,label="Time Window for Signal ID")
-                plt.vlines(sigWinMax,bottom,top)
+                # plt.vlines(sigWinMin,bottom,top,label="Time Window for Signal ID")
+                # plt.vlines(sigWinMax,bottom,top)
                 plt.ylabel("ADC Current")
                 plt.xlabel("time (ns)")
                 plt.xticks(np.arange(zSWin[0],zSWin[1],10))
                 if len(SiPM_val_raw[int(sigWinMin/tfq):int(sigWinMax/tfq)]) > 0:
                     plt.ylim(min(SiPM_val_raw[int(sigWinMin/tfq):int(sigWinMax/tfq)])-0.001,0.001)
                 axes = plt.gca()
-                plt.text(sigWinMin-10,0,"Event {}".format(count))
-                plt.text(0.2,0.1,"Signal Edge = {:.2f} ns".format(ut.minEdge(windowInfo,sf,tfq)),transform = axes.transAxes)
-                plt.text(0.2,0.2,"Signal Area = {:.3f}".format(ut.signalIntegral(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax)),transform = axes.transAxes)
-                plt.text(0.2,0.3,"Pedestal Area = {:.3f}".format(abs(ut.signalPedestal(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax))),transform = axes.transAxes)
+                # plt.text(sigWinMin-10,0,"Event {}".format(count))
+                plt.text(0.7,0.25,"Signal Edge = {:.2f} ns".format(ut.minEdge(windowInfo,sf,tfq)),transform = axes.transAxes)
+                plt.text(0.7,0.30,"Signal Area = {:.3f}".format(ut.signalIntegral(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax)),transform = axes.transAxes)
+                plt.text(0.7,0.35,"Pedestal Area = {:.3f}".format(abs(ut.signalPedestal(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax))),transform = axes.transAxes)
+                plt.xlim(sigWinMin,sigWinMax)
                 plt.grid()
                 plt.legend(fontsize=15,loc="lower right")
                 plt.savefig(sfolderName + "passedEvent{}.png".format(count))
@@ -136,9 +140,12 @@ for count in eventList:
             sefCount += 1
 
 if timeDiff:
-    folderName = "/eos/uscms/store/user/keanet/Hardware/analysis/processedData/{}".format(outFolder)
-    ut.checkMakeDir(folderName)
-    np.savez("{}/timeDifference".format(folderName),midPointSigEdge=midPointSigEdge,minSigEdge=minSigEdge,minPedEdge_0p5=minPedEdge_0p5,minPedEdge_0p75=minPedEdge_0p75,minPedEdge=minPedEdge)
+    localOutFolder = "processedData/{}".format(outFolder)
+    fullOutFolder = "root://cmseos.fnal.gov//store/user/keanet/Hardware/analysis/processedData/{}".format(outFolder)
+    np.savez("{}/timeDifference".format(localOutFolder),midPointSigEdge=midPointSigEdge,minSigEdge=minSigEdge,minPedEdge_0p5=minPedEdge_0p5,minPedEdge_0p75=minPedEdge_0p75,minPedEdge=minPedEdge)
+    os.system("xrdcp -f {}/timeDifference.npz {}/timeDifference.npz".format(localOutFolder,fullOutFolder))
+    os.system("rm {}/timeDifference.npz".format(localOutFolder))
+
 
 if minPEDiff:
     folderName = "plots/minPedDiff/{}/".format(outFolder)
