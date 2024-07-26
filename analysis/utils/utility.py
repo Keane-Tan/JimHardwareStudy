@@ -6,6 +6,7 @@ from scipy.signal import butter, lfilter, freqz
 from scipy import signal
 from scipy.optimize import curve_fit
 import os
+import ROOT as rt
 
 mpl.rc("font", family="serif", size=20)
 
@@ -162,7 +163,7 @@ def midPointEdge(windowInfo,SiPM_val_i,tfq,percent):
         if SiPM_val_i[i] < mid:
             mEdge = i*tfq
             break
-    return mEdge
+    return mid,mEdge
 
 def peFracEdge(SiPM_val_i,triggerTime,wmin,wmax,tfq,sPEADC,nPE = 1.0):
     edgeTime = -999
@@ -236,3 +237,13 @@ def histplot(data,bins,color,label):
     print(len(pdata))
     plt.step(pbins,pdata,where="post",color=color)
     plt.fill_between(pbins,pdata, step="post", color=color,label=label, alpha=1)
+
+def convertToTHist(totalDataEntries,binscenters):
+    binscenters = np.array(binscenters)
+    binWidth = binscenters[1] - binscenters[0]
+    bins = list(binscenters + binWidth)
+    bins.append(bins[-1]+binWidth)
+    h = rt.TH1F("h","h",len(binscenters),np.array(bins))
+    for i in range(len(binscenters)):
+        h.SetBinContent(i,totalDataEntries[i])
+    return h
