@@ -238,6 +238,15 @@ def histplot(data,bins,color,label):
     plt.step(pbins,pdata,where="post",color=color)
     plt.fill_between(pbins,pdata, step="post", color=color,label=label, alpha=1)
 
+def fillROOTHist(dataEntries,aPEScan="auto"):
+    if aPEScan == "auto":
+        h = rt.TH1F("h","h",200,0,np.nanmax(dataEntries))
+    else:
+        h = rt.TH1F("h","h",200,aPEScan[0],aPEScan[1])
+    for entry in dataEntries:
+        h.Fill(entry)
+    return h
+
 def convertToTHist(totalDataEntries,binscenters):
     binscenters = np.array(binscenters)
     binWidth = binscenters[1] - binscenters[0]

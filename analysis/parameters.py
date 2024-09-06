@@ -527,12 +527,13 @@ Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.zTWin = [70,190]
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.sWin = [-20,60]
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.trigValue = 0.06
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.trigPol = "pos"
-Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.pedADC = 0.0075
+Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.pedADC = 0.01
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.sPEADC = [0.09,0.16]
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.tdhistX = [-5,20]
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.fitFunctionChoice = "Exp"
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.fitRan = [0.1,15]
 Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.fitPars = [1000, 0.2]
+Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1.aPEScan = [0,0.6] 
 parameters["Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1"] = Sep_10_405nm_Kuraray_4MJ_to_SIPM_1350_56V_run1
 
 Oct_8_405nm_BCF92_to_SIPM_56V = dataParameters()

@@ -14,7 +14,20 @@ import os
 import pandas as pd
 from parameters import parameters
 from utils import utility as ut
+
 mpl.rc("font", family="serif", size=15)
+rt.gStyle.SetOptStat(0)
+rt.gStyle.SetOptTitle(0)
+
+# colorblind safe palettes (Okabe and Ito) (see https://www.nceas.ucsb.edu/sites/default/files/2022-06/Colorblind%20Safe%20Color%20Schemes.pdf)
+black = rt.TColor.GetColor(0., 0., 0.)
+green = rt.TColor.GetColor(0., 158./255., 115./255.)
+darkBlue = rt.TColor.GetColor(0., 114./255., 178./255.)
+lightBlue = rt.TColor.GetColor(86./255., 180./255., 233./255.)
+yellow = rt.TColor.GetColor(240./255., 228./255., 66./255.)
+orange = rt.TColor.GetColor(230./255., 159./255., 0.)
+darkOrange = rt.TColor.GetColor(213./255., 94./255., 0.)
+pink = rt.TColor.GetColor(204./255., 121./255., 167./255.)
 
 parser = optparse.OptionParser("usage: %prog [options]\n")
 parser.add_option('-d', dest='filename', type='string', default='cosmics_Mar_8_1p4fiber_90cm_4by1by14_one_hole_white_extrusion_5p2meter_long.root', help="File name")
@@ -389,7 +402,7 @@ if PEPlot:
         folderName = "plots/signalArea_ch4/{}/".format(outFolder)
     ut.checkMakeDir(folderName)
     plt.figure(figsize=(12,8))
-    data_entries,bins = np.histogram(windowInt_trigger, bins=500)
+    data_entries,bins = np.histogram(windowInt_trigger, bins=np.linspace(0,5,500))
     binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
     ut.histplot(data_entries,binscenters,"blue","LED")
     plt.xlabel("Signal integral in signal window")
@@ -426,6 +439,7 @@ if PEPlot:
     data_entries,bins = np.histogram(windowInt_cosmic, bins=200)
     binscenters = np.array([0.5 * (bins[i] + bins[i+1]) for i in range(len(bins)-1)])
     ut.histplot(data_entries,binscenters,"orange","Cosmic")
+    rootHist = ut.convertToTHist(data_entries,binscenters)
     # plt.xticks(np.arange(int(np.min(data_entries)),int(np.max(data_entries)),1))
     plt.grid()
     # plt.xlim(0,10)
@@ -436,6 +450,7 @@ if PEPlot:
     # fit Gaussian to cosmic PE distribution
     # ut.fitPEPeak(data_entries,binscenters,zCoWinMin,zCoWinMax,[100,p0Cosmic,hwCosmic],"red")
     plt.xlim(zCoWinMin,zCoWinMax)
+    plt.ylim(0,np.nanmax(data_entries[2:]))
     cutInd = 0
     avgCosPE = []
     pewEvent = {}
@@ -453,7 +468,9 @@ if PEPlot:
     stdErr = std/np.sqrt(len(avgCosPE))
     avgPERes = "{:.1f}({:.1f})".format(np.mean(avgCosPE),std)
     axes = plt.gca()
-    plt.text(0.6,0.65,"Avg. photoelectrons: {:.1f}({:.1f})".format(np.mean(avgCosPE),std),transform = axes.transAxes)
+    avgPEText = "Avg. photoelectrons: {:.1f}({:.1f})".format(np.mean(avgCosPE),std)
+    # avgPEText = "Avg. photoelectrons: {:.1f}({:.1f}, {:.4f})".format(np.mean(avgCosPE),std,stdErr)
+    plt.text(0.6,0.65,avgPEText,transform = axes.transAxes)
     newRow[avgpelab] = avgPERes
     oldData = False
     for fname in df["Filename"]:
@@ -468,7 +485,7 @@ if PEPlot:
     print(df)
     sortedtotalDf = df.sort_values("Date")
     df.to_csv("avgPE.csv",index=False)
-    plt.ylim(0,np.amax(data_entries[cutInd:])*1.1)
+    plt.ylim(0,np.amax(data_entries[5:])*1.1)
     # plt.xticks(np.arange(zCoWinMin,zCoWinMax,zCoWidth))
     plt.vlines(pedADC,0,np.amax(data_entries[cutInd:])*1.1,label="PE Threshold",color="red")
     plt.xlabel("Number of Photoelectrons")
@@ -478,6 +495,28 @@ if PEPlot:
     # plt.hist(windowInt_cosmic,bins=np.arange(0,max(windowDiff_trigger)*1.01,0.01),color='#2a77b4',label="Cosmic")
     plt.legend()
     plt.savefig(folderName + "intCosmic_zoom.png")
+    # ROOT plotting
+    c = rt.TCanvas("c_1", "canvas_1", 800, 800)
+    c.SetLeftMargin(0.15)
+    rootHist.Draw()
+    rootHist.SetFillColor(darkBlue)
+    rootHist.GetYaxis().SetRangeUser(0,np.amax(data_entries[5:])*1.1)
+    rootHist.GetYaxis().SetTitle("Events")
+    rootHist.GetXaxis().SetRangeUser(zCoWinMin,zCoWinMax)
+    rootHist.GetXaxis().SetTitle("Number of Photoelectrons")
+    extraInfo2 = rt.TLatex(0.47,0.4,"#scale[0.6]{"+avgPEText+"}")
+    extraInfo2.SetNDC() # so that the position for TText can be in the range [0,1]
+    extraInfo2.Draw()
+    c.Update() # this is essential, otherwise gPad.GetUymax() returns nonsense. 
+    padMax = rt.gPad.GetUymax()
+    padMin = rt.gPad.GetUymin()
+    vline = rt.TLine(pedADC,padMin,pedADC,padMax)
+    vline.SetLineWidth(2)
+    vline.SetLineStyle(2)
+    vline.SetLineColor(darkOrange)
+    vline.Draw()
+    c.SaveAs(folderName + "intCosmic_zoom_ROOT.pdf")
+
     if scatter:
         if channel == "3":
             scFolder = "plots/scatterPE_ch3/{}".format(outFolder)
@@ -530,7 +569,7 @@ if smoothFit:
         plt.hlines(minSig,sSiPMWinMin-10,sSiPMWinMax+10,color="red")
         plt.text(75,minSig,"100 %",color="red",fontsize=13)
         # ut.lineMatchEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,plot=True)
-        ut.minPedThreshEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,pD0,plot=True)
+        edgeTime, edgeADC, edgeTimeInfo = ut.minPedThreshEdge(lf,sSiPMWinMin,sSiPMWinMax,tpS,pD0,plot=True)
         plt.ylabel("ADC Current")
         plt.xlabel("time (ns)")
         # plt.xlim(10,490)
@@ -542,6 +581,54 @@ if smoothFit:
         plt.legend(fontsize=15,loc="lower right")
         plt.savefig(folderName + "passedEvent{}.png".format(passedInd))
         plt.cla()
+
+        # ROOT plotting
+        c2 = rt.TCanvas("c_2", "canvas_2", 800, 800)
+        c2.SetLeftMargin(0.15)
+        gr_raw = rt.TGraph(len(SiPM_val_i),np.arange(0,len(SiPM_val_i))*tpS,np.array(SiPM_val_i))
+        gr_raw.Draw("AL")
+        xaxis = gr_raw.GetXaxis()
+        xaxis.SetLimits(sSiPMWinMin,sSiPMWinMax)
+        gr_raw.SetLineWidth(2)
+        gr_raw.SetLineColor(darkBlue)
+        gr_raw.GetYaxis().SetTitle("ADC Current")
+        gr_raw.GetXaxis().SetTitle("Time (ns)")
+        # processed signal                
+        gr_smooth = rt.TGraph(len(lf),np.arange(0,len(lf))*tpS,np.array(lf))
+        gr_smooth.Draw("L")
+        gr_smooth.SetLineWidth(2)
+        gr_smooth.SetLineColor(green)
+        c2.Update() # this is essential, otherwise gPad.GetUymax() returns nonsense. 
+        padXMax = rt.gPad.GetUxmax()
+        padXMin = rt.gPad.GetUxmin()
+        padYMax = rt.gPad.GetUymax()
+        padYMin = rt.gPad.GetUymin()
+        # signal edge lines
+        hline = rt.TLine(padXMin,edgeADC,padXMax,edgeADC)
+        hline.Draw()
+        hline.SetLineWidth(2)
+        hline.SetLineStyle(3)
+        hline.SetLineColor(orange)
+        vline = rt.TLine(edgeTime,padYMin,edgeTime,padYMax)
+        vline.SetLineWidth(2)
+        vline.SetLineStyle(2)
+        vline.SetLineColor(darkOrange)
+        vline.Draw()
+        # legend
+        legend = rt.TLegend(0.4,0.1,0.9,0.3)
+        legend.AddEntry(gr_raw, "Raw signal", "l")
+        legend.AddEntry(gr_smooth, "Filtered signal", "l")
+        legend.AddEntry(hline, "Single PE ADC", "l")
+        legend.AddEntry(vline, "Signal Edge Time", "l")
+        legend.Draw()
+        # extra info
+        signalEdgeInfo = "Signal Edge = {:.2f} ns".format(edgeTime)
+        extraInfo = rt.TLatex(0.5,0.45,"#scale[0.7]{"+signalEdgeInfo+"}")
+        extraInfo.SetNDC() # so that the position for TText can be in the range [0,1]
+        extraInfo.Draw()
+        c2.SaveAs(folderName + "passedEvent{}.pdf".format(passedInd))
+
+
     plt.figure(figsize=(12,8))
     plt.hist(rsList,bins=100)
     plt.yscale("log")

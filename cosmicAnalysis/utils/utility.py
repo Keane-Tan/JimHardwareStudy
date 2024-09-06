@@ -96,6 +96,8 @@ def butter_lowpass_filter(data, cutoff=100, fs=2000, order=6):
 
 def minPedThreshEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,plot=False,nPE = 1.0):
     edgeTime = -999
+    edgeADC = 0-sPEADC+signalPedestal(SiPM_val_i,sWinMin,tpS)
+    edgeTimeInfo = ""
     for i in range(len(SiPM_val_i)):
         if int(sWinMin/tpS) < i < int(sWinMax/tpS):
             if SiPM_val_i[i] <= 0-sPEADC*nPE+signalPedestal(SiPM_val_i,sWinMin,tpS):
@@ -103,10 +105,11 @@ def minPedThreshEdge(SiPM_val_i,sWinMin,sWinMax,tpS,sPEADC,plot=False,nPE = 1.0)
                 break
     if plot:
         axes = plt.gca()
+        edgeTimeInfo = "Signal edge = {:.2f}".format(edgeTime)
         plt.vlines(edgeTime,min(SiPM_val_i),0,color="orange")
-        plt.hlines(0-sPEADC+signalPedestal(SiPM_val_i,sWinMin,tpS),sWinMin-10,sWinMax+10,color="orange")
-        plt.text(0.65,0.5,"Signal edge = {:.2f}".format(edgeTime),transform = axes.transAxes)
-    return edgeTime
+        plt.hlines(edgeADC,sWinMin-10,sWinMax+10,color="orange")
+        plt.text(0.65,0.5,edgeTimeInfo,transform = axes.transAxes)    
+    return edgeTime, edgeADC, edgeTimeInfo
 
 def midPointEdge(windowInfo,SiPM_val_i,tpS,percent=0.6):
     windowValues = windowInfo[0]
@@ -253,3 +256,17 @@ def fitAndPlot(totalDataEntries,binscentersFit,color,fitPars,fitFunction,xspace)
     fParas = r"$\mu$={:.2f}({:.2f}); $\sigma$={:.3f}({:.3f})".format(popt[1],perr[1],abs(popt[2]),perr[2])
     plt.plot(xspace, fitFunction(xspace, *popt), color=color, linewidth=3,label=fParas)
     print(fParas)
+    return popt, perr
+
+def getFitInfoROOT(popt, perr):
+    return "#mu=" + "{:.3f}".format(popt[1]) + "(" + "{:.3f}".format(perr[1]) + "); #sigma=" + "{:.3f}".format(abs(popt[2])) + "(" + "{:.3f}".format(perr[2]) + ")"
+
+def convertToTHist(totalDataEntries,binscenters):
+    binscenters = np.array(binscenters)
+    binWidth = binscenters[1] - binscenters[0]
+    bins = list(binscenters + binWidth)
+    bins.append(bins[-1]+binWidth)
+    h = rt.TH1F("h","h",len(binscenters),np.array(bins))
+    for i in range(len(binscenters)):
+        h.SetBinContent(i,totalDataEntries[i])
+    return h

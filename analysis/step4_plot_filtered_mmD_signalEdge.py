@@ -6,8 +6,13 @@ import optparse
 from parameters import parameters
 from utils import utility as ut
 import os
+import ROOT as rt 
 
+rt.gStyle.SetOptStat(0)
+rt.gStyle.SetOptTitle(0)
 mpl.rc("font", family="serif", size=15)
+
+rootPlot = True # this is unstable and can lead to break segmentation, but it can at least make one plot before it breaks.
 
 parser = optparse.OptionParser("usage: %prog [options]\n")
 parser.add_option('-d', dest='filename', type='string', default='Blue_laser_Keane_low_light_test_trig_1_SIPM_2_delay_22ns_5Gss.root', help="File name")
@@ -41,6 +46,16 @@ aPEScan = pars.aPEScan
 print("sampling frequency: {} Gss".format(freq))
 tfq = 1./freq
 print("Time per bin: {} ns".format(tfq))
+
+# colorblind safe palettes (Okabe and Ito) (see https://www.nceas.ucsb.edu/sites/default/files/2022-06/Colorblind%20Safe%20Color%20Schemes.pdf)
+black = rt.TColor.GetColor(0., 0., 0.)
+green = rt.TColor.GetColor(0., 158./255., 115./255.)
+darkBlue = rt.TColor.GetColor(0., 114./255., 178./255.)
+lightBlue = rt.TColor.GetColor(86./255., 180./255., 233./255.)
+yellow = rt.TColor.GetColor(240./255., 228./255., 66./255.)
+orange = rt.TColor.GetColor(230./255., 159./255., 0.)
+darkOrange = rt.TColor.GetColor(213./255., 94./255., 0.)
+pink = rt.TColor.GetColor(204./255., 121./255., 167./255.)
 
 inputFolder = "root://cmseos.fnal.gov//store/user/keanet/Hardware/analysis/dataFiles/"
 tf = rt.TFile.Open(inputFolder + filename)
@@ -111,6 +126,7 @@ for count in eventList:
             passedFilt.append(sf)
             if sefCount < 50:
                 midADC,mpSE = ut.midPointEdge(windowInfo,sf,tfq,percent=sPercent)
+                # python plotting
                 plt.figure(figsize=(12,8))
                 plt.plot(np.arange(0,len(SiPM_val_raw))*tfq,SiPM_val_raw,label="Raw SiPM signal")
                 plt.plot(np.arange(0,len(sf))*tfq,sf,label="Filtered SiPM Signal")
@@ -129,7 +145,7 @@ for count in eventList:
                     plt.ylim(min(SiPM_val_raw[int(sigWinMin/tfq):int(sigWinMax/tfq)])-0.001,0.001)
                 axes = plt.gca()
                 # plt.text(sigWinMin-10,0,"Event {}".format(count))
-                plt.text(0.7,0.25,"Signal Edge = {:.2f} ns".format(ut.minEdge(windowInfo,sf,tfq)),transform = axes.transAxes)
+                plt.text(0.7,0.25,"Signal Edge = {:.2f} ns".format(mpSE),transform = axes.transAxes)
                 plt.text(0.7,0.30,"Signal Area = {:.3f}".format(ut.signalIntegral(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax)),transform = axes.transAxes)
                 plt.text(0.7,0.35,"Pedestal Area = {:.3f}".format(abs(ut.signalPedestal(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax))),transform = axes.transAxes)
                 plt.xlim(sigWinMin,sigWinMax)
@@ -137,6 +153,57 @@ for count in eventList:
                 plt.legend(fontsize=15,loc="lower right")
                 plt.savefig(sfolderName + "passedEvent{}.png".format(count))
                 plt.cla()
+                if rootPlot:
+                    # ROOT plotting
+                    c1 = rt.TCanvas("c_1", "canvas_1", 800, 800)
+                    c1.SetLeftMargin(0.15)
+                    # raw signal
+                    gr_raw = rt.TGraph(len(SiPM_val_raw),np.arange(0,len(SiPM_val_raw))*tfq,np.array(SiPM_val_raw))
+                    gr_raw.Draw("AL")
+                    xaxis = gr_raw.GetXaxis()
+                    xaxis.SetLimits(sigWinMin,sigWinMax)
+                    gr_raw.SetLineWidth(2)
+                    gr_raw.SetLineColor(darkBlue)
+                    gr_raw.GetYaxis().SetTitle("ADC Current")
+                    gr_raw.GetXaxis().SetTitle("Time (ns)")
+                    # processed signal                
+                    gr_smooth = rt.TGraph(len(sf),np.arange(0,len(sf))*tfq,np.array(sf))
+                    gr_smooth.Draw("L")
+                    gr_smooth.SetLineWidth(2)
+                    gr_smooth.SetLineColor(green)
+                    c1.Update() # this is essential, otherwise gPad.GetUymax() returns nonsense. 
+                    padMax = rt.gPad.GetUymax()
+                    padMin = rt.gPad.GetUymin()
+                    # signal edge lines
+                    hline = rt.TLine(sigWinMin,midADC,sigWinMax,midADC)
+                    hline.Draw()
+                    hline.SetLineWidth(2)
+                    hline.SetLineStyle(3)
+                    hline.SetLineColor(orange)
+                    vline = rt.TLine(mpSE,padMin,mpSE,padMax)
+                    vline.SetLineWidth(2)
+                    vline.SetLineStyle(2)
+                    vline.SetLineColor(darkOrange)
+                    vline.Draw()
+                    # legend
+                    legend = rt.TLegend(0.4,0.1,0.9,0.3)
+                    legend.AddEntry(gr_raw, "Raw signal", "l")
+                    legend.AddEntry(gr_smooth, "Filtered signal", "l")
+                    legend.AddEntry(hline, "60% between max. and min. ADC", "l")
+                    legend.AddEntry(vline, "Signal Edge Time", "l")
+                    legend.Draw()
+                    # extra info
+                    signalEdgeInfo = "Signal Edge = {:.2f} ns".format(mpSE)
+                    extraInfo = rt.TLatex(0.5,0.45,"#scale[0.7]{"+signalEdgeInfo+"}")
+                    extraInfo.SetNDC() # so that the position for TText can be in the range [0,1]
+                    extraInfo.Draw()
+                    signalAreaInfo = "Signal Area = {:.3f}".format(ut.signalIntegral(sf,triggerEdge,tfq,wmin=sWinMin,wmax=sWinMax))
+                    extraInfo2 = rt.TLatex(0.5,0.4,"#scale[0.7]{"+signalAreaInfo+"}")
+                    extraInfo2.SetNDC() # so that the position for TText can be in the range [0,1]
+                    extraInfo2.Draw()
+                    c1.SaveAs(sfolderName + "passedEvent{}.pdf".format(count))
+            else:
+                raise Exception("Stop here")
             sefCount += 1
 
 if timeDiff:
@@ -173,6 +240,7 @@ if PEPlot:
     ut.checkMakeDir(folderName)
     windowDiff = np.array(windowDiff)
     windowDiff = windowDiff[np.logical_not(np.isnan(windowDiff))]
+    # python plotting
     plt.figure(figsize=(12,8))
     if aPEScan == "auto":
         plt.hist(windowDiff,bins=np.linspace(0,np.nanmax(windowDiff)*1.01,200))
@@ -187,6 +255,15 @@ if PEPlot:
     plt.xlim(aPEWinMin,aPEWinMax)
     plt.savefig(folderName + "mmD_zoomedIn.png")
     plt.cla()
+    # ROOT plotting (for paper)
+    c = rt.TCanvas("c_1", "canvas_1", 800, 800)
+    c.SetLeftMargin(0.15)
+    rootHist = ut.fillROOTHist(windowDiff,aPEScan)
+    rootHist.Draw()
+    rootHist.SetFillColor(darkBlue)
+    rootHist.GetYaxis().SetTitle("Events")
+    rootHist.GetXaxis().SetTitle("Signal Area")
+    c.SaveAs(folderName + "mmD.pdf")
 
 if sigEdgeFit:
     plt.figure(figsize=(12,8))

@@ -14,6 +14,18 @@ from parameters import parameters
 from utils import utility as ut
 
 mpl.rc("font", family="serif", size=10)
+rt.gStyle.SetOptStat(0)
+rt.gStyle.SetOptTitle(0)
+
+# colorblind safe palettes (Okabe and Ito) (see https://www.nceas.ucsb.edu/sites/default/files/2022-06/Colorblind%20Safe%20Color%20Schemes.pdf)
+black = rt.TColor.GetColor(0., 0., 0.)
+green = rt.TColor.GetColor(0., 158./255., 115./255.)
+darkBlue = rt.TColor.GetColor(0., 114./255., 178./255.)
+lightBlue = rt.TColor.GetColor(86./255., 180./255., 233./255.)
+yellow = rt.TColor.GetColor(240./255., 228./255., 66./255.)
+orange = rt.TColor.GetColor(230./255., 159./255., 0.)
+darkOrange = rt.TColor.GetColor(213./255., 94./255., 0.)
+pink = rt.TColor.GetColor(204./255., 121./255., 167./255.)
 
 parser = optparse.OptionParser("usage: %prog [options]\n")
 parser.add_option('-s', dest='singlePE', action="store_true", help="Use only single PE signals")
@@ -141,11 +153,11 @@ for i in range(nDiv):
             if sigEdge_ch3[1] < rsCut:
                 ch3_Time = sigEdge_ch3[0] - triggerEdge
                 if minPedThresh:
-                    ch3_Time = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0) - triggerEdge
+                    ch3_Time = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0)[0] - triggerEdge
                 T3.append(ch3_Time)
                 T3_all.append(ch3_Time)
                 if len(T3_raw_100) < 100:
-                    sigEdge3 = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0)
+                    sigEdge3 = ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0)[0]
                     T3_raw_100.append(lf_ch3[int(sigEdge3/tpS)-50:])
                     # T3_raw_100.append(lf_ch3)
         if windowInfo_ch4:
@@ -155,11 +167,11 @@ for i in range(nDiv):
             if sigEdge_ch4[1] < rsCut:
                 ch4_Time = sigEdge_ch4[0] - triggerEdge
                 if minPedThresh:
-                    ch4_Time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0) - triggerEdge
+                    ch4_Time = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0)[0] - triggerEdge
                 T4.append(ch4_Time)
                 T4_all.append(ch4_Time)
                 if len(T4_raw_100) < 100:
-                    sigEdge4 = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0)
+                    sigEdge4 = ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0)[0]
                     T4_raw_100.append(lf_ch4[int(sigEdge4/tpS)-50:])
                     # T4_raw_100.append(lf_ch4)
         if windowInfo_ch3 and windowInfo_ch4:
@@ -167,7 +179,7 @@ for i in range(nDiv):
             if sigEdge_ch3[1] < rsCut and sigEdge_ch4[1] < rsCut:
                 ch43_time = (sigEdge_ch4[0] - sigEdge_ch3[0])/2.
                 if minPedThresh:
-                    ch43_time = (ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0) - ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0))/2.
+                    ch43_time = (ut.minPedThreshEdge(lf_ch4,sSiPMWinMin_ch4,sSiPMWinMax_ch4,tpS,pD0_ch4,plot=False,nPE = 1.0)[0] - ut.minPedThreshEdge(lf_ch3,sSiPMWinMin_ch3,sSiPMWinMax_ch3,tpS,pD0_ch3,plot=False,nPE = 1.0)[0])/2.
                 T43.append(ch43_time)
                 T43_all.append(ch43_time)
     # print("Number of data in ch3: {}".format(len(T3)))
@@ -204,11 +216,11 @@ binscentersFit = binscenters
 plt.figure(figsize=(12,8))
 
 ut.histplot(totalDataEntries_T3,binscenters,color='#2ca02c',label="T3")
-ut.fitAndPlot(totalDataEntries_T3,binscentersFit,'#d62728',fitPars_T3,fitFunction,xspace)
+popt3, perr3 = ut.fitAndPlot(totalDataEntries_T3,binscentersFit,'#d62728',fitPars_T3,fitFunction,xspace)
 ut.histplot(totalDataEntries_T4,binscenters,color='#2a77b4',label="T4")
-ut.fitAndPlot(totalDataEntries_T4,binscentersFit,'#9467bd',fitPars_T4,fitFunction,xspace)
+popt4, perr4 = ut.fitAndPlot(totalDataEntries_T4,binscentersFit,'#9467bd',fitPars_T4,fitFunction,xspace)
 ut.histplot(totalDataEntries_T43,binscenters,color='#ff7f0e',label="(T4-T3)/2")
-ut.fitAndPlot(totalDataEntries_T43,binscentersFit,'#17becf',fitPars_T43,fitFunction,xspace)
+popt43, perr43 = ut.fitAndPlot(totalDataEntries_T43,binscentersFit,'#17becf',fitPars_T43,fitFunction,xspace)
 axes = plt.gca()
 # plt.text(0.6,0.6,"Number of T3 events = %i"%(T3_count),transform = axes.transAxes)
 # plt.text(0.6,0.55,"Number of T4 events = %i"%(T4_count),transform = axes.transAxes)
@@ -220,6 +232,50 @@ plt.xlabel("Time (ns)")
 plt.ylabel("Events")
 plt.ylim(0)
 plt.savefig(folderName + plotname + ".png")
+
+# ROOT plotting
+c = rt.TCanvas("c_1", "canvas_1", 1200, 800)
+c.SetLeftMargin(0.15)
+## plot histogram
+rootHist3 = ut.convertToTHist(totalDataEntries_T3,binscenters)
+rootHist4 = ut.convertToTHist(totalDataEntries_T4,binscenters)
+rootHist43 = ut.convertToTHist(totalDataEntries_T43,binscenters)
+rootHist43.Draw()
+rootHist43.SetFillColor(darkOrange)
+rootHist43.GetYaxis().SetRangeUser(0,np.amax(totalDataEntries_T43[5:])*1.1)
+rootHist43.GetYaxis().SetTitle("Events")
+rootHist43.GetXaxis().SetTitle("Time Difference between Signal and Trigger")
+rootHist3.Draw("SAME")
+rootHist3.SetFillColor(green)
+rootHist4.Draw("SAME")
+rootHist4.SetFillColor(darkBlue)
+
+## plot fits
+xspace, 
+gr_smooth3 = rt.TGraph(len(xspace),xspace,fitFunction(xspace, *popt3))
+gr_smooth3.Draw("L")
+gr_smooth3.SetLineWidth(2)
+gr_smooth3.SetLineColor(pink)
+gr_smooth4 = rt.TGraph(len(xspace),xspace,fitFunction(xspace, *popt4))
+gr_smooth4.Draw("L")
+gr_smooth4.SetLineWidth(2)
+gr_smooth4.SetLineColor(yellow)
+gr_smooth43 = rt.TGraph(len(xspace),xspace,fitFunction(xspace, *popt43))
+gr_smooth43.Draw("L")
+gr_smooth43.SetLineWidth(2)
+gr_smooth43.SetLineColor(lightBlue)
+
+
+legend = rt.TLegend(0.15,0.6,0.7,0.9)
+legend.SetNColumns(2)
+legend.AddEntry(rootHist3, "T1", "f")
+legend.AddEntry(gr_smooth3, ut.getFitInfoROOT(popt3, perr3), "l")
+legend.AddEntry(rootHist4, "T2", "f")
+legend.AddEntry(gr_smooth4, ut.getFitInfoROOT(popt4, perr4), "l")
+legend.AddEntry(rootHist43, "(T2-T1)/2", "f")
+legend.AddEntry(gr_smooth43, ut.getFitInfoROOT(popt43, perr43), "l")
+legend.Draw()
+c.SaveAs(folderName + plotname + ".pdf")
 
 plt.figure(figsize=(12,8))
 for i in range(100):

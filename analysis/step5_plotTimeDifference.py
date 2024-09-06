@@ -11,6 +11,16 @@ rt.gStyle.SetOptStat(0)
 rt.gStyle.SetOptTitle(0)
 mpl.rc("font", family="serif", size=20)
 
+# colorblind safe palettes (Okabe and Ito) (see https://www.nceas.ucsb.edu/sites/default/files/2022-06/Colorblind%20Safe%20Color%20Schemes.pdf)
+black = rt.TColor.GetColor(0., 0., 0.)
+green = rt.TColor.GetColor(0., 158./255., 115./255.)
+darkBlue = rt.TColor.GetColor(0., 114./255., 178./255.)
+lightBlue = rt.TColor.GetColor(86./255., 180./255., 233./255.)
+yellow = rt.TColor.GetColor(240./255., 228./255., 66./255.)
+orange = rt.TColor.GetColor(230./255., 159./255., 0.)
+darkOrange = rt.TColor.GetColor(213./255., 94./255., 0.)
+pink = rt.TColor.GetColor(204./255., 121./255., 167./255.)
+
 parser = optparse.OptionParser("usage: %prog [options]\n")
 parser.add_option('-d', dest='filename', type='string', default='Blue_laser_Keane_low_light_test_trig_1_SIPM_2_4p6V_5Gss.root', help="File name")
 parser.add_option('--pythonPlot',help='Use python plotting style instead of ROOT.', dest='pythonPlot', default=False, action='store_true')
@@ -82,7 +92,7 @@ for key,item in timeDifference.items():
         c = rt.TCanvas("c_1", "canvas_1", 800, 800)
         c.SetLeftMargin(0.15)
         rootHist.Draw()
-        rootHist.SetFillColor(4)
+        rootHist.SetFillColor(darkBlue)
         rootHist.GetYaxis().SetTitle("Events")
         rootHist.GetXaxis().SetTitle("Time Difference between Signal and Trigger")
     if fitFunctionChoice != None:
@@ -106,7 +116,7 @@ for key,item in timeDifference.items():
             gr = rt.TGraph(len(xspace),xspace+binWidth/2.,fitFunction(xspace, *popt))
             gr.Draw("L SAME")
             gr.SetLineWidth(3)
-            gr.SetLineColor(2)
+            gr.SetLineColor(darkOrange)
             if fitFunctionChoice == "Gaus":
                 fitFunctionLeg = "Fit: N exp #left[ #frac{- (x-#mu)^{2} }{2#sigma^{2}} #right]"
                 nVals = "N = {:.1f} ({:.1f})".format(popt[0],perr[0])
